@@ -14,26 +14,16 @@ abstract contract PriceConsumer {
     AggregatorV3Interface internal priceFeed_dai_usd;
 
     function getEUROPrice() public view returns (int256) {
-        (
-            ,
-            int256 price,
-            ,
-            uint256 timeStamp,
-            
-        ) = priceFeed_eur_usd.latestRoundData();
+        (, int256 price, , uint256 timeStamp, ) =
+            priceFeed_eur_usd.latestRoundData();
         // If the round is not complete yet, timestamp is 0
         require(timeStamp > 0, "Round not complete");
         return price;
     }
 
     function getDAIPrice() public view returns (int256) {
-        (
-            ,
-            int256 price,
-            ,
-            uint256 timeStamp,
-            
-        ) = priceFeed_dai_usd.latestRoundData();
+        (, int256 price, , uint256 timeStamp, ) =
+            priceFeed_dai_usd.latestRoundData();
         // If the round is not complete yet, timestamp is 0
         require(timeStamp > 0, "Round not complete");
         return price;
