@@ -4,9 +4,7 @@ pragma solidity 0.7.3;
 
 import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV3Interface.sol";
 
-
 abstract contract PriceConsumer {
-
     /*
      * Network: Mainnet
      * Aggregator: ETH/USD
@@ -15,31 +13,29 @@ abstract contract PriceConsumer {
     AggregatorV3Interface internal priceFeed_eur_usd;
     AggregatorV3Interface internal priceFeed_dai_usd;
 
-
-    function getEUROPrice() public view returns (int) {
+    function getEUROPrice() public view returns (int256) {
         (
-            uint80 roundID, 
-            int price,
-            uint startedAt,
-            uint timeStamp,
-            uint80 answeredInRound
+            ,
+            int256 price,
+            ,
+            uint256 timeStamp,
+            
         ) = priceFeed_eur_usd.latestRoundData();
         // If the round is not complete yet, timestamp is 0
         require(timeStamp > 0, "Round not complete");
         return price;
     }
 
-    function getDAIPrice() public view returns (int) {
+    function getDAIPrice() public view returns (int256) {
         (
-            uint80 roundID, 
-            int price,
-            uint startedAt,
-            uint timeStamp,
-            uint80 answeredInRound
+            ,
+            int256 price,
+            ,
+            uint256 timeStamp,
+            
         ) = priceFeed_dai_usd.latestRoundData();
         // If the round is not complete yet, timestamp is 0
         require(timeStamp > 0, "Round not complete");
         return price;
     }
 }
-   
