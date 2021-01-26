@@ -11,9 +11,17 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./PriceConsumer.sol";
 
+interface DaiToken {
+    function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
+    function transfer(address dst, uint wad) external returns (bool);
+    function balanceOf(address guy) external view returns (uint);
+}
+
 abstract contract SwapMinter is PriceConsumer, Ownable {
     using SafeMath for uint256;
     using Math for uint256;
+
+    DaiToken Dai;
 
     // exchange rate informations
     uint256 exchange_rate_start;
@@ -32,7 +40,7 @@ abstract contract SwapMinter is PriceConsumer, Ownable {
     // USDFLOAT and USDFLOAT are both ERC20 tokens
     ERC20PresetMinterPauser public EURFIX;
     ERC20PresetMinterPauser public USDFLOAT;
-    ERC20 public Dai;
+    // ERC20 public Dai;
 
     function start_saving() public onlyOwner {
         //round_is_over = true;

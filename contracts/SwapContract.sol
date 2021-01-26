@@ -19,6 +19,7 @@ contract SwapContract is SwapRedeemer {
         priceFeed_dai_usd = AggregatorV3Interface(
             0x777A68032a88E5A84678A77Af2CD65A7b3c0775a
         );
+        Dai = DaiToken(0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa);
     }
 
     address EURFIX_address;
@@ -38,7 +39,8 @@ contract SwapContract is SwapRedeemer {
 
     function set_Dai_address(address new_token_address) public onlyOwner {
         Dai_address = new_token_address;
-        Dai = ERC20(new_token_address);
+        // Since we declare it in the construuctor, what is this for ?
+        // Dai = ERC20(new_token_address);
     }
 
     // view your current balance
