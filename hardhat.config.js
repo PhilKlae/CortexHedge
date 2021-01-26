@@ -14,8 +14,13 @@ const mnemonic = process.env.DEV_MNEMONIC;
 // Be aware of NEVER putting real Ether into testing accounts
 
 module.exports = {
-  defaultNetwork: "kovan",
+  defaultNetwork: "hardhat",
   networks: {
+    hardhat: {
+      forking: {
+        url: `https://mainnet.infura.io/v3/${infuraProjectId}`,
+      }
+    },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${infuraProjectId}`,
       accounts: {mnemonic: mnemonic}

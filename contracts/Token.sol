@@ -3,7 +3,6 @@
 // It will be used by the Solidity compiler to validate its version.
 pragma solidity ^0.7.0;
 
-import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 
 // This is the main building block for smart contracts.
 contract Token {
@@ -21,8 +20,6 @@ contract Token {
     // A mapping is a key/value map. Here we store each account balance.
     mapping(address => uint256) balances;
 
-    AggregatorV3Interface internal priceFeed;
-
     /**
      * Contract initialization.
      *
@@ -37,7 +34,6 @@ contract Token {
         // that is deploying the contract.
         balances[msg.sender] = totalSupply;
         owner = msg.sender;
-        priceFeed = AggregatorV3Interface(0x9326BFA02ADD2366b30bacB125260Af641031331);
     }
 
     /**
@@ -65,21 +61,5 @@ contract Token {
      */
     function balanceOf(address account) external view returns (uint256) {
         return balances[account];
-    }
-
-    /**
-     * Returns the latest price
-     */
-    function getLatestPrice() public view returns (int) {
-        (
-            uint80 roundID, 
-            int price,
-            uint startedAt,
-            uint timeStamp,
-            uint80 answeredInRound
-        ) = priceFeed.latestRoundData();
-        // If the round is not complete yet, timestamp is 0
-        require(timeStamp > 0, "Round not complete");
-        return price;
     }
 }
