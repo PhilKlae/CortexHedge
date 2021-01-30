@@ -14,16 +14,15 @@ contract SwapContract is SwapRedeemer {
 
     constructor() public {}
 
-    address EURFIX_address;
-    address USDFLOAT_address;
-    address Dai_address;
+    address public EURFIX_address;
+    address public USDFLOAT_address;
+    address public Dai_address;
 
     // set new address (used for testing)
     function set_EURFIX_address(address new_token_address) public onlyOwner {
         EURFIX_address = new_token_address;
         EURFIX = ERC20PresetMinterPauser(EURFIX_address);
     }
-    
     function set_USDFLOAT_address(address new_token_address) public onlyOwner {
         USDFLOAT_address = new_token_address;
         USDFLOAT = ERC20PresetMinterPauser(new_token_address);
