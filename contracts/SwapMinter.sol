@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./PriceConsumerV3DAIEUR.sol";
 
+/* Use  mock Dai token for testing purposes
 interface DaiToken {
     function transferFrom(
         address _from,
@@ -22,6 +23,7 @@ interface DaiToken {
 
     function balanceOf(address guy) external view returns (uint256);
 }
+*/
 
 contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     using SafeMath for uint256;
@@ -31,7 +33,7 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     ERC20PresetMinterPauser public EURFIX;
     ERC20PresetMinterPauser public USDFLOAT;
 
-    DaiToken Dai;
+    //DaiToken Dai; mdr
 
     // exchange rate informations
     uint256 public exchange_rate_start;
@@ -49,7 +51,7 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
 
     constructor() public PriceConsumerV3DAIEUR() {}
 
-    // ERC20 public Dai;
+    ERC20 public Dai;
 
     function start_saving() public onlyOwner {
         //round_is_over = true;
