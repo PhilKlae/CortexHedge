@@ -5,6 +5,12 @@ describe("Swap Contract", function () {
   let SwapContract;
   let hardhatSwapContract;
 
+  let EURFIX;
+  let hardhatEURFIX;
+  let USDFLOAT;
+  let hardhatUSDFLOAT;
+  let DAI;
+  let hardhatDAI;
 
   let owner;
   let addr1;
@@ -17,43 +23,42 @@ describe("Swap Contract", function () {
     SwapContract = await ethers.getContractFactory("SwapContract");
     hardhatSwapContract = await SwapContract.deploy();
     await hardhatSwapContract.deployed();
-    const SwapContractAddress = hardhatSwapContract.address;
-
   
     // get addresses to interact
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
+    // launch auxillary tokens and connect to main contract
+    EURFIX = await ethers.getContractFactory("EURFIX");
+    hardhatEURFIX = await EURFIX.deploy(hardhatSwapContract.address);
+    await hardhatEURFIX.deployed();
+
+    USDFLOAT = await ethers.getContractFactory("USDFLOAT");
+    hardhatUSDFLOAT = await USDFLOAT.deploy(hardhatSwapContract.address);
+    await hardhatUSDFLOAT.deployed();
+
+    DAI = await ethers.getContractFactory("mockDAI");
+    hardhatDAI = await DAI.deploy(50000);
+    await hardhatDAI.deployed();
+
+    // give derivative contract address to main address
+    await hardhatSwapContract.set_EURFIX_address(hardhatEURFIX.address);
+    await hardhatSwapContract.set_USDFLOAT_address(hardhatUSDFLOAT.address);
+    await hardhatSwapContract.set_Dai_address(hardhatDAI.address);
 
   })
 
   describe("Deployment", function () {
-    it("Should set the right owner", async function () {
+    it("Should give Swap Contract the MINTER_ROLE", async function() {
+      // Deployer address should receive the MINTER_ROLE
+      const minter_role = await hardhatEURFIX.MINTER_ROLE();
+      expect(await hardhatEURFIX.hasRole(minter_role, hardhatSwapContract.address)).to.be.true;
+    });
+    it("Should set the correct (EURFIX) address in SwapContract ", async function () {
       // This test expects the owner variable stored in the contract to be equal
       // to our Signer's owner.
-      expect(await hardhatSwapContract.owner()).to.equal(owner.address);
-    });
-    it("Sucessfully connect contracts", async function () {
-      // This test expects the owner variable stored in the contract to be equal
-      // to our Signer's owner.
-      expect(await hardhatSwapContract.owner()).to.equal(owner.address);
+      expect(await hardhatSwapContract.EURFIX_address()).to.equal(hardhatEURFIX.address);
     });
 
-  });
-
-  describe("Inheritance", function () {
-    it("Can access the price oracles from Price Consumer Contract", async function () {
-      //console.log(await hardhatSwapContract.getDAIPrice());
-      expect(await hardhatSwapContract.getDAIPrice()).not.be.null;
-    });
-  });
-
-  describe("Savings Period", function () {
-    it("Can start the savings period", async function () {
-      await hardhatSwapContract.start_saving();
-      const exchange_rate_start = await hardhatSwapContract.exchange_rate_start();
-      expect(exchange_rate_start).not.be.null;
-      expect(exchange_rate_start).to.equal(await hardhatSwapContract.getEUROPrice());
-    });
   });
 
 });
