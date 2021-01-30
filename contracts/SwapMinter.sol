@@ -9,25 +9,35 @@ pragma solidity 0.7.3;
 import "@openzeppelin/contracts/presets/ERC20PresetMinterPauser.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/Math.sol";
-import "./PriceConsumer.sol";
+import "./PriceConsumerV3DAIEUR.sol";
 
 interface DaiToken {
-    function transferFrom(address _from, address _to, uint256 _value) external returns (bool success);
-    function transfer(address dst, uint wad) external returns (bool);
-    function balanceOf(address guy) external view returns (uint);
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _value
+    ) external returns (bool success);
+
+    function transfer(address dst, uint256 wad) external returns (bool);
+
+    function balanceOf(address guy) external view returns (uint256);
 }
 
-abstract contract SwapMinter is PriceConsumer, Ownable {
+contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     using SafeMath for uint256;
     using Math for uint256;
+
+    // USDFLOAT and USDFLOAT are both ERC20 tokens
+    ERC20PresetMinterPauser public EURFIX;
+    ERC20PresetMinterPauser public USDFLOAT;
 
     DaiToken Dai;
 
     // exchange rate informations
-    uint256 exchange_rate_start;
+    uint256 public exchange_rate_start;
 
-    uint256 total_pool_prinicipal;
-    uint256 total_pool_balance;
+    uint256 public total_pool_prinicipal;
+    uint256 public total_pool_balance;
 
     // toDO:
     // save ERC20, chainlink oracle decimals as uint to use in calculations
@@ -37,9 +47,8 @@ abstract contract SwapMinter is PriceConsumer, Ownable {
         uint256 exchange_rate
     );
 
-    // USDFLOAT and USDFLOAT are both ERC20 tokens
-    ERC20PresetMinterPauser public EURFIX;
-    ERC20PresetMinterPauser public USDFLOAT;
+    constructor() public PriceConsumerV3DAIEUR() {}
+
     // ERC20 public Dai;
 
     function start_saving() public onlyOwner {
