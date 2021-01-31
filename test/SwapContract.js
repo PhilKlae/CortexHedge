@@ -122,31 +122,3 @@ describe("Swap Contract", function () {
 
 });
 
-/*
-
-
-
-  describe("Deployment", function () {
-    it("Should give Swap Contract the MINTER_ROLE", async function() {
-      // Deployer address should receive the MINTER_ROLE
-      const minter_role = await hardhatEURFIX.MINTER_ROLE();
-      expect(await hardhatEURFIX.hasRole(minter_role, hardhatSwapContract.address)).to.be.true;
-    });
-    it("Should set the correct (EURFIX) address in SwapContract ", async function () {
-      // This test expects the owner variable stored in the contract to be equal
-      // to our Signer's owner.
-      expect(await hardhatSwapContract.EURFIX_address()).to.equal(hardhatEURFIX.address);
-    });
-    it("Should set the correct (USDFLOAT) address in SwapContract ", async function () {
-      // This test expects the owner variable stored in the contract to be equal
-      // to our Signer's owner.
-      expect(await hardhatSwapContract.USDFLOAT_address()).to.equal(hardhatUSDFLOAT.address);
-    });
-
-  });
-  
-  describe("Hello", function () {
-    it("Should give Swap Contract the MINTER_ROLE", async function() {
-    });
-  });
-*/
