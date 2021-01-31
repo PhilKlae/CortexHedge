@@ -33,13 +33,23 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     ERC20PresetMinterPauser public EURFIX;
     ERC20PresetMinterPauser public USDFLOAT;
 
-    //DaiToken Dai; mdr
+    //DaiToken Dai;
 
     // exchange rate informations
     uint256 public exchange_rate_start;
 
+    // balance of the pool
     uint256 public total_pool_prinicipal;
     uint256 public total_pool_balance;
+
+    // savings period
+    enum InvestmentPhase
+    {
+        PreSavings,
+        Savings,
+        Redeeming
+    }
+    InvestmentPhase current_phase;
 
     // toDO:
     // save ERC20, chainlink oracle decimals as uint to use in calculations
@@ -53,12 +63,28 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
 
     ERC20 public Dai;
 
-    function start_saving() public onlyOwner {
-        //round_is_over = true;
-        exchange_rate_start = uint256(getEUROPrice());
+
+    modifier isSavingsPhase () {
+        require(current_phase == InvestmentPhase.Savings, "No savings phase currently");
+        _;
     }
 
-    function invest(uint256 Dai_amount) public {
+    function start_saving() public onlyOwner {
+        // allow minting of tokens
+        current_phase = InvestmentPhase.Savings;
+
+        // initialize exchange rate
+        exchange_rate_start = uint256(getEUROPrice());
+
+        // inititiate pool balances
+        total_pool_prinicipal = Dai.balanceOf(address(this));
+        total_pool_balance = total_pool_prinicipal;
+    }
+
+    function invest(uint256 Dai_amount) public isSavingsPhase() {
+        require(total_pool_balance>0, "Pool Balance must be larger than 0");
+        require(total_pool_prinicipal>0, "Pool Principal must be larger than 0");
+
         bool success = Dai.transferFrom(msg.sender, address(this), Dai_amount);
         require(success, "buy failed");
         _mint_tokens(Dai_amount);
@@ -67,6 +93,7 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
 
     function _mint_tokens(uint256 Dai_amount) internal {
         // scale amount by interest earned today
+
         Dai_amount = Dai_amount.mul(total_pool_prinicipal).div(
             total_pool_balance
         );
