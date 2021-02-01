@@ -70,6 +70,7 @@ abstract contract SwapRedeemer is SwapMinter {
         final_EURFIX_payout_rate = calculate_EURFIX_payout(exchange_rate_end);
         console.log("EURFIX payout rate is: ", final_EURFIX_payout_rate);
         final_USDFLOAT_payout = calculate_USDFLOAT_payout(exchange_rate_end);
+        console.log("USDFLOAT payout rate is: ", final_EURFIX_payout_rate);
     }
 
     modifier isRedeemingsPhase() {
@@ -181,18 +182,16 @@ abstract contract SwapRedeemer is SwapMinter {
         public
         view
         returns (uint256)
-    {
+    {       
+        console.log("calculate_EURFIX_payout()");
         uint256 min_payout_factor =
             (chainlink_decimals.add(leverage_inverse)).mul(exchange_rate_start); // (1 + 1/leverage) * e_0
         console.log("Min payout factor is:", min_payout_factor);
-        console.log("Leverage inverse is: ", leverage_inverse);
-        
         uint256 max_payout_factor =
             (chainlink_decimals.sub(leverage_inverse)).mul(exchange_rate_start); // (1 - 1/leverage) * e_0
+        console.log("Max payout factor is:", max_payout_factor);
         return
-            _exchange_rt.max(min_payout_factor).min(max_payout_factor).mul(
-                leverage
-            ); // min(max(e, min_value), max_value)*leverage
+            _exchange_rt.max(min_payout_factor).min(max_payout_factor); // min(max(e, min_value), max_value)*leverage
     }
 
     // payout is always [0,2]
@@ -201,16 +200,18 @@ abstract contract SwapRedeemer is SwapMinter {
         view
         returns (uint256)
     {
+        console.log("calculate_USDFLOAT_payout()");
         uint256 ratio =
-            _exchange_rt.mul(chainlink_decimals).div(exchange_rate_start); // e_T/e_0
-        uint256 min_payout_factor = chainlink_decimals.add(leverage_inverse); // (1 + 1/leverage)
-        uint256 max_payout_factor = chainlink_decimals.sub(leverage_inverse); // (1 - 1/leverage)
-
-        ratio = ratio.max(min_payout_factor).min(max_payout_factor).mul(
-            leverage
-        ); // max(min(e_T/e_1, 1 + 1/leverage), 1 - 1/leverage) * leverage
+            _exchange_rt.mul(chainlink_decimals).div(exchange_rate_start); // e_T/e_0 // 8 cecimals
+        console.log("Ratio is: ", ratio);
+        uint256 max_payout_factor = chainlink_decimals.add(leverage_inverse); // (1 + 1/leverage) // 8 cecimals
+        console.log("Max payout factors is: ", max_payout_factor);
+        uint256 min_payout_factor = chainlink_decimals.sub(leverage_inverse); // (1 - 1/leverage) // 7 cecimals
+        console.log("Min payout factors is: ", min_payout_factor);
+        ratio = ratio.max(min_payout_factor).min(max_payout_factor); // max(min(e_T/e_1, 1 + 1/leverage), 1 - 1/leverage) 
+        console.log("Ratio is: ", ratio);
         uint256 normalizer = 2 * chainlink_decimals;
+        console.log("Normalizer is: ", normalizer);
         return normalizer.sub(ratio).div(10); // 2 - max(min(e_T/e_1, 1 + 1/leverage), 1 - 1/leverage) * leverage
     }
 }
-2
