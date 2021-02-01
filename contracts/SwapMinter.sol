@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/presets/ERC20PresetMinterPauser.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./PriceConsumerV3DAIEUR.sol";
+import "hardhat/console.sol";
 
 /* Use  mock Dai token for testing purposes
 interface DaiToken {
@@ -77,14 +78,16 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
         exchange_rate_start = uint256(getEUROPrice());
 
         // inititiate pool balances
-        total_pool_prinicipal = Dai.balanceOf(address(this));
-        total_pool_balance = total_pool_prinicipal;
+        uint current_balance = Dai.balanceOf(address(this));
+        //console.log("Current contract balance is:", current_balance);
+        require(current_balance>0, "Pool Balance must be larger than 0");
+
+        // balance must be larger than 0 to start the savings process 
+        total_pool_prinicipal = current_balance;
+        total_pool_balance = current_balance;
     }
 
     function invest(uint256 Dai_amount) public isSavingsPhase() {
-        require(total_pool_balance>0, "Pool Balance must be larger than 0");
-        require(total_pool_prinicipal>0, "Pool Principal must be larger than 0");
-
         bool success = Dai.transferFrom(msg.sender, address(this), Dai_amount);
         require(success, "buy failed");
         _mint_tokens(Dai_amount);
