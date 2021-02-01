@@ -56,8 +56,8 @@ describe("Swap Contract", function () {
 
   });
 
-  describe("Savings Period", function () {
-    it("Should allow Owner to start the savings period", async function () {
+  describe("Start the savings phase", function () {
+    it("Should allow Owner to start the savings phase", async function () {
       // contract call
       await hardhatSwapContract.start_saving();
       const exchange_rate_start = await hardhatSwapContract.exchange_rate_start();
@@ -72,13 +72,13 @@ describe("Swap Contract", function () {
         "Dai"
       )
     });
-    it("Should allow non-owner not to start the savings period", async function () {
+    it("Should allow non-owner not to start the savings phase", async function () {
         await expect(
           hardhatSwapContract.connect(minter).start_saving()
         ).to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
-  describe("Minting process", function () {
+  describe("Mint derivative tokens", function () {
     it("Should give the deployer of DAI some tokens", async function() {
       // Deployer address should receive the MINTER_ROLE
       const ownerBalance = await hardhatDAI.balanceOf(owner.address);
