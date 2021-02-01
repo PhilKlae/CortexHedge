@@ -62,8 +62,8 @@ contract SwapContract is SwapRedeemer {
         return _Dai_to_EUR(get_USDFLOAT_to_Dai(_address));
     }
 
-    function is_saving_over() public view returns (bool) {
-        return saving_is_over;
+    function get_current_phase() public view returns (InvestmentPhase) {
+        return current_phase;
     }
 
     // exchange rate conversion helper

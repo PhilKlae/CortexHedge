@@ -1,3 +1,4 @@
+/*
 pragma solidity ^0.6.6;
 
 // import './interfaces/ILiquidityValueCalculator.sol';
@@ -10,6 +11,7 @@ interface ILiquidityValueCalculator {
 }
 
 contract UniswapConnector is ILiquidityValueCalculator {
+ 
     address public factory;
     constructor(address factory_) public {
         factory = factory_;
@@ -41,4 +43,6 @@ contract UniswapConnector is ILiquidityValueCalculator {
         path[1] = UniswapV2Router02.WETH();
         UniswapV2Router02.swapExactTokensForETH(amountIn, amountOutMin, path, msg.sender, block.timestamp);
     }
+  
 }
+*/

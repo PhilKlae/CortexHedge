@@ -23,6 +23,9 @@ describe("Swap Contract deployment", function () {
   const ownerDAISupply = totalDAISupply.sub(initialContractBalance);
   const approvedAmount = ethers.BigNumber.from("100000000000000000000"); // 100
 
+  // parameterization
+  const leverage = 10;
+  
   beforeEach(async () => {
 
     // main swap contract
@@ -50,20 +53,22 @@ describe("Swap Contract deployment", function () {
     await hardhatSwapContract.set_EURFIX_address(hardhatEURFIX.address);
     await hardhatSwapContract.set_USDFLOAT_address(hardhatUSDFLOAT.address);
     await hardhatSwapContract.set_Dai_address(hardhatDAI.address);
-
-    // send initial supply of Dai to the pool
-    await hardhatDAI.transfer(hardhatSwapContract.address, initialContractBalance);
-
   });
-
+  /*
   describe("Inheritance", function () {
     it("Can access the price oracles from Price Consumer Contract", async function () {
       expect(await hardhatSwapContract.getDAIPrice()).not.be.null;
     });
   });
+  */
+  describe("Check state variables", function () {
+    it("Should check if the ", async function () {
+      const inverse_leverage = await hardhatSwapContract.leverage_inverse();
+      console.log("Inverse leverage is: " , inverse_leverage.toString());
+    });
+  });
 
-
-
+  /*
   describe("Deployment", function () {
     it("Should give Swap Contract the MINTER_ROLE", async function() {
       // Deployer address should receive the MINTER_ROLE
@@ -83,6 +88,7 @@ describe("Swap Contract deployment", function () {
       expect(await hardhatSwapContract.Dai_address()).to.equal(hardhatDAI.address);
     });
   });
+  */
 
 });
 

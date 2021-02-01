@@ -7,28 +7,29 @@
 pragma solidity 0.7.3;
 
 import "./SwapMinter.sol";
+import "hardhat/console.sol";
 
 abstract contract SwapRedeemer is SwapMinter {
     using SafeMath for uint256;
     using Math for uint256;
 
     // exchange rate informations
-    uint256 exchange_rate_end;
+    uint256 public exchange_rate_end;
 
-    bool saving_is_over;
-
+    // parameterization
     uint256 public leverage = 10;
-
-    uint256 chainlink_decimals = 10**8;
-
+    uint256 public chainlink_decimals = 10**8;
     uint256 public leverage_inverse = chainlink_decimals.div(leverage); // 1/leverage
 
-    uint256 final_EURFIX_payout_rate;
-    uint256 final_USDFLOAT_payout;
 
-    uint256 final_interest_earned;
+    // pool estimates
+    uint256 public final_interest_earned;
+    uint256 public final_total_pool_balance;
 
-    uint256 final_total_pool_balance;
+    // growth estimates
+    uint256 public final_EURFIX_payout_rate;
+    uint256 public final_USDFLOAT_payout;
+
 
     // toDO:
     // save ERC20, chainlink oracle decimals as uint to use in calculations
@@ -50,20 +51,30 @@ abstract contract SwapRedeemer is SwapMinter {
     );
 
     function start_redeeming() public onlyOwner {
-        saving_is_over = true;
+        // allow minting of tokens
+        current_phase = InvestmentPhase.Redeeming;
+
         exchange_rate_end = uint256(getEUROPrice());
 
         // calculate global numbers once to save gas
-
+        final_total_pool_balance = Dai.balanceOf(address(this));
+        console.log("Final pool balance is: ", final_total_pool_balance);
+        console.log("Final pool principal is: ", total_pool_prinicipal);
+        
         // check how much return was generate on assets
-        final_total_pool_balance = total_pool_balance;
         final_interest_earned = final_total_pool_balance.sub(
             total_pool_prinicipal
         );
-
+        console.log("Interest earned is: ", final_interest_earned);
         // check what the final payout of the derivative is
         final_EURFIX_payout_rate = calculate_EURFIX_payout(exchange_rate_end);
-        final_USDFLOAT_payout = calculate_USDFLOAT_payout(exchange_rate_end);
+        console.log("EURFIX payout rate is: ", final_EURFIX_payout_rate);
+        // final_USDFLOAT_payout = calculate_USDFLOAT_payout(exchange_rate_end);
+    }
+
+    modifier isRedeemingsPhase() {
+        require(current_phase == InvestmentPhase.Redeeming, "No savings phase currently");
+        _;
     }
 
     function redeem(uint256 EURFIX_amount, uint256 USDFLOAT_amount) public {
@@ -85,7 +96,7 @@ abstract contract SwapRedeemer is SwapMinter {
     }
 
     // redeem derivative tokens
-    function redeem_EURFIX(uint256 EURFIX_amount) external {
+    function redeem_EURFIX(uint256 EURFIX_amount) external  isRedeemingsPhase() {
         // require(saving_is_over, "Saving period has not stopped yet");
         uint256 usd_amount_retail = EURFIX_to_Dai(EURFIX_amount);
         EURFIX.burnFrom(msg.sender, EURFIX_amount);
@@ -96,7 +107,7 @@ abstract contract SwapRedeemer is SwapMinter {
         );
     }
 
-    function redeem_USDFLOAT(uint256 USDFLOAT_amount) external {
+    function redeem_USDFLOAT(uint256 USDFLOAT_amount) external  isRedeemingsPhase() {
         // require(saving_is_over, "Saving period has not stopped yet");
         uint256 usd_amount_hedger = USDFLOAT_to_Dai(USDFLOAT_amount);
         USDFLOAT.burnFrom(msg.sender, USDFLOAT_amount);
@@ -173,6 +184,9 @@ abstract contract SwapRedeemer is SwapMinter {
     {
         uint256 min_payout_factor =
             (chainlink_decimals.add(leverage_inverse)).mul(exchange_rate_start); // (1 + 1/leverage) * e_0
+        console.log("Min payout factor is:", min_payout_factor);
+        console.log("Leverage inverse is: ", leverage_inverse);
+        
         uint256 max_payout_factor =
             (chainlink_decimals.sub(leverage_inverse)).mul(exchange_rate_start); // (1 - 1/leverage) * e_0
         return
