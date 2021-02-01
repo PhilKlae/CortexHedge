@@ -50,7 +50,7 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
         Savings,
         Redeeming
     }
-    InvestmentPhase current_phase;
+    InvestmentPhase public current_phase;
 
     // toDO:
     // save ERC20, chainlink oracle decimals as uint to use in calculations
