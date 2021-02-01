@@ -69,7 +69,7 @@ abstract contract SwapRedeemer is SwapMinter {
         // check what the final payout of the derivative is
         final_EURFIX_payout_rate = calculate_EURFIX_payout(exchange_rate_end);
         console.log("EURFIX payout rate is: ", final_EURFIX_payout_rate);
-        // final_USDFLOAT_payout = calculate_USDFLOAT_payout(exchange_rate_end);
+        final_USDFLOAT_payout = calculate_USDFLOAT_payout(exchange_rate_end);
     }
 
     modifier isRedeemingsPhase() {
@@ -79,7 +79,7 @@ abstract contract SwapRedeemer is SwapMinter {
 
     function redeem(uint256 EURFIX_amount, uint256 USDFLOAT_amount) public {
         require(
-            EURFIX_amount.div(exchange_rate_start) == USDFLOAT_amount,
+            EURFIX_amount == USDFLOAT_amount,
             "Only equal split allowed"
         );
 
@@ -213,3 +213,4 @@ abstract contract SwapRedeemer is SwapMinter {
         return normalizer.sub(ratio).div(10); // 2 - max(min(e_T/e_1, 1 + 1/leverage), 1 - 1/leverage) * leverage
     }
 }
+2

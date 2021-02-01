@@ -23,23 +23,27 @@ describe("Swap Contract", function () {
   const ownerDAISupply = totalDAISupply.sub(initialContractBalance);
   const approvedAmount = ethers.BigNumber.from("100000000000000000000"); // 100
 
+  beforeEach('Set up accounts', async () => {
+    // get addresses to interact
+    [owner, minter, redeemer, ...addrs] = await ethers.getSigners();
+});
   
   beforeEach('Deploy Contracts', async () => {
     // main swap contract
     SwapContract = await ethers.getContractFactory("SwapContract");
-    hardhatSwapContract = await SwapContract.deploy();
+    hardhatSwapContract = await SwapContract.connect(owner).deploy();
     await hardhatSwapContract.deployed();
     // launch auxillary tokens and connect to main contract
     EURFIX = await ethers.getContractFactory("EURFIX");
-    hardhatEURFIX = await EURFIX.deploy(hardhatSwapContract.address);
+    hardhatEURFIX = await EURFIX.connect(minter).deploy(hardhatSwapContract.address);
     await hardhatEURFIX.deployed();
 
     USDFLOAT = await ethers.getContractFactory("USDFLOAT");
-    hardhatUSDFLOAT = await USDFLOAT.deploy(hardhatSwapContract.address);
+    hardhatUSDFLOAT = await USDFLOAT.connect(redeemer).deploy(hardhatSwapContract.address);
     await hardhatUSDFLOAT.deployed();
 
     DAI = await ethers.getContractFactory("DAI");
-    hardhatDAI = await DAI.deploy(totalDAISupply);
+    hardhatDAI = await DAI.connect(owner).deploy(totalDAISupply);
     await hardhatDAI.deployed();
 
     // give derivative contract address to main address
@@ -48,10 +52,7 @@ describe("Swap Contract", function () {
     await hardhatSwapContract.set_Dai_address(hardhatDAI.address);
 
   });
-  beforeEach('Set up accounts', async () => {
-      // get addresses to interact
-      [owner, minter, redeemer, ...addrs] = await ethers.getSigners();
-  });
+
 
   beforeEach('Send initial Dai balance', async () => {
     // send initial supply of Dai to the pool
@@ -83,8 +84,6 @@ describe("Swap Contract", function () {
         "Dai"
       );
     });
-  });
-  describe("Check the redeeming phase", function () {
     it("Should change the phase after start_redeeming() is called", async function () {
       const old_phase = await hardhatSwapContract.current_phase();
       console.log("Before call the phase is", old_phase.toString());
@@ -94,7 +93,7 @@ describe("Swap Contract", function () {
 
       const new_phase = await hardhatSwapContract.current_phase();
       console.log("Before call the phase is", new_phase.toString());
-      expect(old_phase).to.equal(2);
+      expect(new_phase).to.equal(2);
     });
   });
 });
