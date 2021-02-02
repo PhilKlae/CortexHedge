@@ -11,17 +11,18 @@
   "license": "ISC",
   "devDependencies": {
     "@chainlink/contracts": "0.0.12",
+    "@chainlink/test-helpers": "0.0.5",
     "@nomiclabs/hardhat-ethers": "^2.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/contracts": "^3.3.0",
+    "@openzeppelin/hardhat-upgrades": "^1.6.0",
     "@openzeppelin/test-helpers": "^0.5.9",
     "chai": "^4.2.0",
     "dotenv": "^8.2.0",
     "ethereum-waffle": "^3.2.1",
-    "ethers": "^5.0.26",
+    "ethers": "^5.0.27",
     "hardhat": "^2.0.8",
-    "hardhat-deploy": "^0.7.0-beta.28",
-    "@chainlink/test-helpers": "0.0.5"
+    "hardhat-deploy": "^0.7.0-beta.28"
   },
   "directories": {
     "test": "test"
@@ -35,7 +36,7 @@
   },
   "homepage": "https://github.com/PhilKlae/CortexHedge#readme",
   "dependencies": {
-    "@openzeppelin/contracts-ethereum-package": "^3.0.0",
+    "@openzeppelin/contracts-ethereum-package": "2.5.0",
     "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0"
