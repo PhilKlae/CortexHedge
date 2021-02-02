@@ -55,8 +55,8 @@ contract MoneyToCurve is Initializable, Context, Ownable {
      * @notice Deposits 4 stablecoins (registered in Curve.Fi Y pool)
      * @param _amounts Array of amounts for CurveFI stablecoins in pool (denormalized to token decimals)
      */
-    function multiStepDeposit(uint256[4] memory _amounts) public {
-        address[4] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
+    function multiStepDeposit(uint256[2] memory _amounts) public {
+        address[2] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
 
         for (uint256 i = 0; i < stablecoins.length; i++) {
             IERC20(stablecoins[i]).safeTransferFrom(_msgSender(), address(this), _amounts[i]);
@@ -84,8 +84,8 @@ contract MoneyToCurve is Initializable, Context, Ownable {
      * @notice Withdraws 4 stablecoins (registered in Curve.Fi Y pool)
      * @param _amounts Array of amounts for CurveFI stablecoins in pool (denormalized to token decimals)
      */
-    function multiStepWithdraw(uint256[4] memory _amounts) public {
-        address[4] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
+    function multiStepWithdraw(uint256[2] memory _amounts) public {
+        address[2] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
 
         //Step 1 - Calculate amount of Curve LP-tokens to unstake
         uint256 nWithdraw;
@@ -162,8 +162,8 @@ contract MoneyToCurve is Initializable, Context, Ownable {
     /**
      * @notice Balances of stablecoins available for withdraw
      */
-    function balanceOfAll() public view returns(uint256[4] memory balances) {
-        address[4] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
+    function balanceOfAll() public view returns(uint256[2] memory balances) {
+        address[2] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
 
         uint256 curveLPBalance = curveLPTokenBalance();
         uint256 curveLPTokenSupply = IERC20(curveFi_LPToken).totalSupply();
@@ -190,8 +190,8 @@ contract MoneyToCurve is Initializable, Context, Ownable {
      * @notice Balances of stablecoins available for withdraw normalized to 18 decimals
      */
     function normalizedBalance() public view returns(uint256) {
-        address[4] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
-        uint256[4] memory balances = balanceOfAll();
+        address[2] memory stablecoins = ICurveFi_DepositY(curveFi_Deposit).underlying_coins();
+        uint256[2] memory balances = balanceOfAll();
 
         uint256 summ;
         for (uint256 i=0; i < stablecoins.length; i++){

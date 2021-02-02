@@ -20,7 +20,7 @@ import "../curvefi/ICurveFi_SwapY.sol";
 contract Stub_CurveFi_SwapY is ICurveFi_SwapY, Initializable, Context {
     using SafeMath for uint256;
 
-    uint256 public constant N_COINS = 4;
+    uint256 public constant N_COINS = 2;
     uint256 constant MAX_EXCHANGE_FEE = 0.05*1e18;
 
     address public __token;
@@ -101,7 +101,7 @@ contract Stub_CurveFi_SwapY is ICurveFi_SwapY, Initializable, Context {
 
  //       uint256[N_COINS] rates = _stored_rates();
  //       D0: uint256 = self.get_D_mem(rates, _balances)
-        uint256[4] memory _balances;
+        uint256[N_COINS] memory _balances;
         uint256 total;
         for (uint256 i = 0; i < N_COINS; i++) {
             _balances[i] = __balances[i];

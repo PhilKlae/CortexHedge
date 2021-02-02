@@ -20,7 +20,7 @@ contract Stub_CurveFi_DepositY is ICurveFi_DepositY, Initializable, Context {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    uint256 public constant N_COINS = 4;
+    uint256 public constant N_COINS = 2;
 
     //Curve.Fi Swap address
     address public __curve;
@@ -39,7 +39,7 @@ contract Stub_CurveFi_DepositY is ICurveFi_DepositY, Initializable, Context {
     }
 
     function add_liquidity (uint256[N_COINS] memory uamounts, uint256 min_mint_amount) public {
-        uint256[N_COINS] memory amounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
+        uint256[N_COINS] memory amounts = [uint256(0), uint256(0)];
 
         for (uint256 i = 0; i < uamounts.length; i++) {
             if (uamounts[i] == 0) continue;
@@ -61,12 +61,12 @@ contract Stub_CurveFi_DepositY is ICurveFi_DepositY, Initializable, Context {
     
     function remove_liquidity (uint256 _amount, uint256[N_COINS] memory min_uamounts) public {
         IERC20(__token).safeTransferFrom(_msgSender(), address(this), _amount);
-        ICurveFi_SwapY(__curve).remove_liquidity(_amount, [uint256(0), uint256(0), uint256(0), uint256(0)]);
+        ICurveFi_SwapY(__curve).remove_liquidity(_amount, [uint256(0), uint256(0)]);
         _send_all(_msgSender(), min_uamounts);
     }
 
     function remove_liquidity_imbalance(uint256[N_COINS] memory uamounts, uint256 max_burn_amount) public {
-        uint256[N_COINS] memory amounts = [uint256(0), uint256(0), uint256(0), uint256(0)];
+        uint256[N_COINS] memory amounts = [uint256(0), uint256(0)];
 
         for (uint256 i = 0; i < uamounts.length; i++) {
             if (uamounts[i] > 0) {
@@ -89,7 +89,7 @@ contract Stub_CurveFi_DepositY is ICurveFi_DepositY, Initializable, Context {
         IERC20(__token).safeTransfer(_msgSender(), _tokens);
 
         //Unwrap and transfer all the coins we've got
-        _send_all(_msgSender(), [uint256(0), uint256(0), uint256(0), uint256(0)]);
+        _send_all(_msgSender(), [uint256(0), uint256(0)]);
     }
 
     function coins(int128 i) public view returns (address) {
