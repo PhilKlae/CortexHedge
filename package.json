@@ -35,6 +35,8 @@
   },
   "homepage": "https://github.com/PhilKlae/CortexHedge#readme",
   "dependencies": {
+    "@openzeppelin/contracts-ethereum-package": "^3.0.0",
+    "@openzeppelin/upgrades": "^2.8.0",
     "@uniswap/v2-core": "^1.0.1",
     "@uniswap/v2-periphery": "^1.1.0-beta.0"
   }
