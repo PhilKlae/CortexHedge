@@ -26,7 +26,7 @@ describe("Swap Contract", function () {
   beforeEach('Set up accounts', async () => {
     // get addresses to interact
     [owner, minter, redeemer, ...addrs] = await ethers.getSigners();
-});
+  });
   
   beforeEach('Deploy Contracts', async () => {
     // main swap contract
