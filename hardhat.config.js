@@ -75,6 +75,11 @@ module.exports = {
         version: "0.5.12",
         settings: { } 
       }
+      ,
+      {
+        version: "0.6.6",
+        settings: {  }
+      }
     ]
   },
   paths: {
