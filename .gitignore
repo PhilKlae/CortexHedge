@@ -8,7 +8,7 @@
 *.tsbuildinfo
 hardhat.config.js
 .DS_Store
-
+package-lock.json
 # sensitive data (memnonic & infura)
 .env
 
