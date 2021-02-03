@@ -28,31 +28,31 @@ describe("Swap Contract deployment", function () {
   
   beforeEach(async () => {
 
-    // main swap contract
-    SwapContract = await ethers.getContractFactory("SwapContract");
-    hardhatSwapContract = await SwapContract.deploy();
-    await hardhatSwapContract.deployed();
-  
     // get addresses to interact
     [owner, minter, redeemer, ...addrs] = await ethers.getSigners();
 
+    // main swap contract
+    SwapContract = await ethers.getContractFactory("SwapContract");
+    hardhatSwapContract = await SwapContract.connect(owner).deploy();
+    await hardhatSwapContract.deployed();
+  
     // launch auxillary tokens and connect to main contract
     EURFIX = await ethers.getContractFactory("EURFIX");
-    hardhatEURFIX = await EURFIX.deploy(hardhatSwapContract.address);
+    hardhatEURFIX = await EURFIX.connect(owner).deploy(hardhatSwapContract.address);
     await hardhatEURFIX.deployed();
 
     USDFLOAT = await ethers.getContractFactory("USDFLOAT");
-    hardhatUSDFLOAT = await USDFLOAT.deploy(hardhatSwapContract.address);
+    hardhatUSDFLOAT = await USDFLOAT.connect(minter).deploy(hardhatSwapContract.address);
     await hardhatUSDFLOAT.deployed();
 
     DAI = await ethers.getContractFactory("DAI");
-    hardhatDAI = await DAI.deploy(totalDAISupply);
+    hardhatDAI = await DAI.connect(minter).deploy(totalDAISupply);
     await hardhatDAI.deployed();
 
     // give derivative contract address to main address
-    await hardhatSwapContract.set_EURFIX_address(hardhatEURFIX.address);
-    await hardhatSwapContract.set_USDFLOAT_address(hardhatUSDFLOAT.address);
-    await hardhatSwapContract.set_Dai_address(hardhatDAI.address);
+    await hardhatSwapContract.connect(owner).set_EURFIX_address(hardhatEURFIX.address);
+    await hardhatSwapContract.connect(owner).set_USDFLOAT_address(hardhatUSDFLOAT.address);
+    await hardhatSwapContract.connect(owner).set_Dai_address(hardhatDAI.address);
   });
   /*
   describe("Inheritance", function () {
@@ -62,13 +62,12 @@ describe("Swap Contract deployment", function () {
   });
   */
   describe("Check state variables", function () {
-    it("Should check if the ", async function () {
+    it("Should print the inverse leverage factor", async function () {
       const inverse_leverage = await hardhatSwapContract.leverage_inverse();
       console.log("Inverse leverage is: " , inverse_leverage.toString());
     });
   });
 
-  /*
   describe("Deployment", function () {
     it("Should give Swap Contract the MINTER_ROLE", async function() {
       // Deployer address should receive the MINTER_ROLE
@@ -88,7 +87,7 @@ describe("Swap Contract deployment", function () {
       expect(await hardhatSwapContract.Dai_address()).to.equal(hardhatDAI.address);
     });
   });
-  */
+
 
 });
 

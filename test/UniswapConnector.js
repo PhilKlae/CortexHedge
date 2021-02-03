@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
 const contract = require('@truffle/contract');
-const FactoryBytecode = require('@uniswap/v2-core/build/UniswapV2Factory.json')
+const FactoryBytecode = require('@uniswap/v2-core/build/UniswapV2Factory.json').bytecode;
 const UniswapV2Factory = contract(FactoryBytecode);
 
 const UniswapV2FactoryBytecode = require('@uniswap/v2-core/build/UniswapV2Factory.json').bytecode
