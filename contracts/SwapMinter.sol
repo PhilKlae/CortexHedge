@@ -43,11 +43,11 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     uint256 public total_pool_prinicipal;
     uint256 public total_pool_balance;
 
-    // Saving period
+    // savings period
     enum InvestmentPhase
     {
-        PreSaving,
-        Saving,
+        PreSavings,
+        Savings,
         Redeeming
     }
     InvestmentPhase public current_phase;
@@ -65,14 +65,14 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     ERC20 public Dai;
 
 
-    modifier isSavingPhase () {
-        require(current_phase == InvestmentPhase.Saving, "No Saving phase currently");
+    modifier isSavingsPhase () {
+        require(current_phase == InvestmentPhase.Savings, "No savings phase currently");
         _;
     }
 
     function start_saving() public onlyOwner {
         // allow minting of tokens
-        current_phase = InvestmentPhase.Saving;
+        current_phase = InvestmentPhase.Savings;
 
         // initialize exchange rate
         exchange_rate_start = uint256(getEUROPrice());
@@ -82,12 +82,12 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
         //console.log("Current contract balance is:", current_balance);
         require(current_balance>0, "Pool Balance must be larger than 0");
 
-        // balance must be larger than 0 to start the Saving process 
+        // balance must be larger than 0 to start the savings process 
         total_pool_prinicipal = current_balance;
         total_pool_balance = current_balance;
     }
 
-    function invest(uint256 Dai_amount) public isSavingPhase() {
+    function invest(uint256 Dai_amount) public isSavingsPhase() {
         bool success = Dai.transferFrom(msg.sender, address(this), Dai_amount);
         require(success, "buy failed");
         _mint_tokens(Dai_amount);
