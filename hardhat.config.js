@@ -1,3 +1,4 @@
+require('@openzeppelin/hardhat-upgrades');
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-truffle5");
 require('dotenv').config();
@@ -66,7 +67,12 @@ module.exports = {
       }
       },
       {
-        version: "0.6.6",
+        version: "0.6.12",
+        settings: { } 
+      }
+      ,
+      {
+        version: "0.5.12",
         settings: { } 
       }
     ]
