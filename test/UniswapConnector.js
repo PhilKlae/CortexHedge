@@ -4,6 +4,9 @@ const contract = require('@truffle/contract');
 const FactoryBytecode = require('@uniswap/v2-core/build/UniswapV2Factory.json')
 const UniswapV2Factory = contract(FactoryBytecode);
 
+const UniswapV2FactoryBytecode = require('@uniswap/v2-core/build/UniswapV2Factory.json').bytecode
+
+
 describe("Uniswap connector contract", function() {
   it("Should get the reserve of the pool DAI/WETH and the total supply", async function() {
     const [owner] = await ethers.getSigners();
