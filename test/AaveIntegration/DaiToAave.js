@@ -86,9 +86,35 @@ describe("DaiToAave functions", function () {
       
         await dai.connect(owner).approve(pool, ethers.utils.parseEther(""+lendAmount));
         allowance = await dai.allowance(owner.address,pool);
-        console.log("allowance is: " + allowance);
+        //console.log("allowance is: " + allowance);
         expect (allowance).to.equal(ethers.utils.parseEther(""+lendAmount));
       //  await ownerAave.addAllowance(pool,ethers.utils.parseEther(""+lendAmount));
+      
+      });
+
+
+
+      it("Deposit ", async function () {
+        
+        let DaiAmount = 5000;    
+        balance = await OccupyDAI(owner,DaiAmount);
+        let lendAmount = 2500;
+
+        ownerAave = daiToAave.connect(owner);
+
+        pool = await daiToAave.GetLendingPoolAdress();
+        //let principal = await ownerAave.GetPrincipalAmount();
+        //console.log(principal);
+        console.log("adding allowance");
+        let dai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');                
+      
+        await dai.connect(owner).approve(pool, ethers.utils.parseEther(""+lendAmount));
+        allowance = await dai.allowance(owner.address,pool);
+        console.log("allowance is: " + allowance);
+        console.log(pool);
+        await ownerAave.deposit(pool, '0x6B175474E89094C44Da98b954EedeAC495271d0F' , ethers.utils.parseEther(""+lendAmount));
+        //expect (allowance).to.equal(ethers.utils.parseEther(""+lendAmount));
+       
       
       });
       
