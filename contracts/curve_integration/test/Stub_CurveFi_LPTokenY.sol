@@ -15,6 +15,6 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC20/ERC20Burn
 contract Stub_CurveFi_LPTokenY is Initializable, Context, ERC20, ERC20Detailed, ERC20Mintable, ERC20Burnable {
     function initialize() public initializer {
         ERC20Mintable.initialize(_msgSender());
-        ERC20Detailed.initialize("Curve.fi yDAI/yUSDC/yUSDT/yTUSD", "yDAI+yUSDC+yUSDT+yTUSD", 18);
+        ERC20Detailed.initialize("Curve.fi ysEUR+yEURS", "ysEUR+yEURS", 18);
     }
 }

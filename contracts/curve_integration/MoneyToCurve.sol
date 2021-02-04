@@ -50,6 +50,21 @@ contract MoneyToCurve is Initializable, Context, Ownable {
         curveFi_CRVToken = ICurveFi_Gauge(curveFi_LPGauge).crv_token();
     }
 
+    /**
+     * @notice Return the balance of the current collateral (in EURO)
+     * @param _amounts Array of amounts for CurveFI stablecoins in pool (denormalized to token decimals)
+     */
+    function curveLPTokenBalanceToStableCoin(uint256 _amounts, address __token, address[2] memory __coins) public view returns(uint256[] memory) {
+            // sum redeemable amount
+            uint256 total_supply = IERC20(__token).totalSupply(); 
+            uint256[] memory amounts = new uint256[](__coins.length);
+            for (uint256 i=0; i < __coins.length; i++){
+                uint256 value = IERC20(__coins[uint256(i)]).balanceOf(address(this));
+                amounts[i] = _amounts.mul(value).div(total_supply);
+            }
+        return amounts;
+    }
+
 
     /**
      * @notice Deposits 4 stablecoins (registered in Curve.Fi Y pool)
