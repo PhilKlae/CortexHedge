@@ -107,15 +107,40 @@ describe("DaiToAave functions", function () {
         //console.log(principal);
         console.log("adding allowance");
         let dai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');                
-      
+        let adai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x363edC62b8236a0079c00320340485Ee0E7B17ae'); 
+
         await dai.connect(owner).approve(pool, ethers.utils.parseEther(""+lendAmount));
-        allowance = await dai.allowance(owner.address,pool);
+        allowance = await dai.allowance(daiToAave.address,pool);
         console.log("allowance is: " + allowance);
         console.log(pool);
-        await ownerAave.deposit(pool, '0x6B175474E89094C44Da98b954EedeAC495271d0F' , ethers.utils.parseEther(""+lendAmount));
+        const lending_pool_address = await daiToAave.getLending();
+        dai.transfer(daiToAave.address, lendAmount);
+        console.log("lending pool address is", lending_pool_address);
+
+        
+        const s0 = await adai.totalSupply();
+
+        console.log("total adai supply" ,s0.toString());
+
+        let b1 = await dai.balanceOf(daiToAave.address);
+        let b2 = await dai.balanceOf(owner.address);
+
+        console.log("dai balance before", b1.toString());
+        console.log("dai balance before", b2.toString());
+
+        await daiToAave.connect(owner).deposit_new();
+        
+        b1 = await dai.balanceOf(daiToAave.address);
+        b2 = await dai.balanceOf(owner.address);
+        
+        console.log("dai balance after", b1.toString());
+        console.log("dai balance after", b2.toString());
+
+        await daiToAave.connect(owner).withdraw_new();
+        //await ownerAave.deposit (pool, dai.address , ethers.utils.parseEther(""+lendAmount));
         //expect (allowance).to.equal(ethers.utils.parseEther(""+lendAmount));
        
-      
+  
       });
       
     });
