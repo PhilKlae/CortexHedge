@@ -97,13 +97,15 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     function _mint_tokens(uint256 Dai_amount) internal {
         // scale amount by interest earned today
 
-        Dai_amount = Dai_amount.mul(total_pool_prinicipal).div(
+        uint Dai_principal_amount = Dai_amount.mul(total_pool_prinicipal).div(
             total_pool_balance
         );
         // requirements: getter function for interest earned. this might be complicated if a
         // complex investment strategy is in place
-        _mint_euro_stable(Dai_amount.div(2));
-        _mint_euro_unstable(Dai_amount.div(2));
+        _mint_euro_stable(Dai_principal_amount.div(2));
+        _mint_euro_unstable(Dai_principal_amount.div(2));
+
+        total_pool_prinicipal = total_pool_prinicipal.add(Dai_principal_amount);
     }
 
     // mint derivative tokens
@@ -113,7 +115,7 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     }
 
     function _Dai_to_EURFIX(uint256 _amount) internal view returns (uint256) {
-        return _amount.mul(10**8).div(uint256(getEUROPrice()));
+        return _amount.mul(10**8).div(exchange_rate_start);
     }
 
     function _mint_euro_unstable(uint256 Dai_amount) internal {

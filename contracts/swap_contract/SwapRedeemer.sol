@@ -80,7 +80,7 @@ abstract contract SwapRedeemer is SwapMinter {
 
     function redeem(uint256 EURFIX_amount, uint256 USDFLOAT_amount) public {
         require(
-            EURFIX_amount == USDFLOAT_amount,
+            EURFIX_amount.mul(exchange_rate_start) == USDFLOAT_amount,
             "Only equal split allowed"
         );
 

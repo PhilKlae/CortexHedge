@@ -15,6 +15,8 @@ import "./curvefi/ICurveFi_Minter.sol";
 import "./curvefi/ICurveFi_SwapY.sol";
 import "./curvefi/IYERC20.sol";
 
+import "hardhat/console.sol";
+
 contract MoneyToCurve is Initializable, Context, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -50,6 +52,27 @@ contract MoneyToCurve is Initializable, Context, Ownable {
         curveFi_CRVToken = ICurveFi_Gauge(curveFi_LPGauge).crv_token();
     }
 
+    /**
+     * @notice Return the balances of the LP tokens (in EURO)
+     * @param _amounts Array of amounts for CurveFI stablecoins in pool (denormalized to token decimals)
+     * @param __token  LP pool token 
+     * @param __coins  Array of tokens used in CurveFI poo
+     */
+    function curveLPTokenBalanceToStableCoin(uint256 _amounts, address __token, address[2] memory __coins) public view returns(uint256[] memory) {
+            // sum redeemable amount
+            console.log("_amounts is", _amounts);
+            uint256 total_supply = IERC20(__token).totalSupply(); 
+            console.log("total supply is", total_supply);
+            uint256[] memory amounts = new uint256[](__coins.length);
+            console.log("coins have length", __coins.length);
+            for (uint256 i=0; i < __coins.length; i++){
+                uint256 value = IERC20(__coins[uint256(i)]).balanceOf(address(curveFi_Swap));
+                amounts[i] = _amounts.mul(value).div(total_supply);
+                console.log("value is", value, "in round", i);
+            }
+        return amounts;
+    }
+
 
     /**
      * @notice Deposits 4 stablecoins (registered in Curve.Fi Y pool)
@@ -66,17 +89,8 @@ contract MoneyToCurve is Initializable, Context, Ownable {
         //Step 1 - deposit stablecoins and get Curve.Fi LP tokens
         ICurveFi_DepositY(curveFi_Deposit).add_liquidity(_amounts, 0); //0 to mint all Curve has to 
 
-        //Step 2 - stake Curve LP tokens into Gauge and get CRV rewards
-        uint256 curveLPBalance = IERC20(curveFi_LPToken).balanceOf(address(this));
-
-        IERC20(curveFi_LPToken).safeApprove(curveFi_LPGauge, curveLPBalance);
-        ICurveFi_Gauge(curveFi_LPGauge).deposit(curveLPBalance);
-
-        //Step 3 - get all the rewards (and make whatever you need with them)
-        crvTokenClaim();
-        uint256 crvAmount = IERC20(curveFi_CRVToken).balanceOf(address(this));
-        IERC20(curveFi_CRVToken).safeTransfer(_msgSender(), crvAmount);
-
+        //Step 2 - get Curve LP tokens 
+        //uint256 curveLPBalance = IERC20(curveFi_LPToken).balanceOf(address(this));
     }
 
 
@@ -96,15 +110,6 @@ contract MoneyToCurve is Initializable, Context, Ownable {
 
         uint256 withdrawShares = calculateShares(nWithdraw);
 
-        //Check if you can re-use unstaked LP tokens
-        uint256 notStaked = curveLPTokenUnstaked();
-        if (notStaked > 0) {
-            withdrawShares = withdrawShares.sub(notStaked);
-        }
-
-        //Step 2 - Unstake Curve LP tokens from Gauge
-        ICurveFi_Gauge(curveFi_LPGauge).withdraw(withdrawShares);
-    
         //Step 3 - Withdraw stablecoins from CurveDeposit
         IERC20(curveFi_LPToken).safeApprove(curveFi_Deposit, withdrawShares);
         ICurveFi_DepositY(curveFi_Deposit).remove_liquidity_imbalance(_amounts, withdrawShares);

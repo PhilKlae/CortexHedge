@@ -5,11 +5,18 @@
 
 pragma solidity ^0.6.12;
 
+
 import "hardhat/console.sol";
+
+//import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 import "@aave/protocol-v2/contracts/interfaces/ILendingPool.sol";
 
+
 import "@aave/protocol-v2/contracts/interfaces/ILendingPoolAddressesProvider.sol";
+
+import "@aave/protocol-v2/contracts/interfaces/IAToken.sol";
+
 
 // This is the main building block for smart contracts.
 contract DaiToAdai {
@@ -19,6 +26,13 @@ contract DaiToAdai {
     //get lending pool adress
 
     //  ADAI public s; // kovan 0x3ae4c2a436f1e5f995310179be2e838ab5cfa4c3
+    
+    // 0x6b175474e89094c44da98b954eedeac495271d0f
+
+    address constant public DAI_Adress = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address constant public aDAI_Address = 0xfC1E690f61EFd961294b3e1Ce3313fBD8aa4f85d;
+
+   //0x6b175474e89094c44da98b954eedeac495271d0f;
 
     //approveDelegation()
     /**
@@ -29,11 +43,12 @@ contract DaiToAdai {
     constructor() public {}
 
     function GetLendingPoolAdress() external view returns (address) {
+
         /// Retrieve LendingPool address
         console.log("Getting lending pool address");
         ILendingPoolAddressesProvider provider =
             ILendingPoolAddressesProvider(
-                address(0x88757f2f99175387ab4c6a4b3067c77a695b034900)
+                address(0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5)
             ); // Kovan address, for other addresses: https://docs.aave.com/developers/getting-started/deployed-contracts
        
         
@@ -43,14 +58,41 @@ contract DaiToAdai {
 
         console.log("created lending pool");
         return address(lendingPool);
+
     }
 
     function deposit(
         address pool,
-        address token,
-        address user,
+        address token, 
         uint256 amount
     ) public {
-        ILendingPool(pool).deposit(token, amount, user, 0);
+        
+
+        ILendingPool(pool).deposit(token, amount, msg.sender, 0);
+
     }
+
+    function withdraw(
+        address pool,
+        address token,        
+        uint256 amount
+    ) public {
+
+        ILendingPool(pool).withdraw(token,amount,msg.sender);
+
+    }
+
+    function addAllowance(
+        address pool,         
+        uint256 amount
+    ) public {        
+        IERC20(DAI_Adress).approve(pool, amount );
+    }
+
+    function GetPrincipalAmount ()        
+    external view returns(uint256)
+    {        
+        return IAToken(aDAI_Address).scaledBalanceOf(msg.sender);
+    }
+    
 }
