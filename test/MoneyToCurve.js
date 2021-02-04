@@ -126,16 +126,6 @@ contract('Integrate Curve.Fi into your defi', async([ owner, defiowner, user1, u
             expect((await yEURS.balanceOf(curveSwap.address)).toString(), "YEURS not deposited").to.equal(deposits.EURS.toString());
         });
 
-        it('Curve.Fi LP-tokens are staked in Gauge', async() => {
-            let lptokens = deposits.sEUR.add(deposits.EURS.mul(new BN('10000000000000000')));
-            expect((await moneyToCurve.curveLPTokenStaked()).toString(), "Stake is absent").to.equal(lptokens.toString());
-            expect((await curveGauge.balanceOf(moneyToCurve.address)).toString(), "Stake is absent in Gauge").to.equal(lptokens.toString());       
-        });
-
-        it('CRV tokens are minted and transfered to the user', async() => {
-            expect((await crvToken.balanceOf(user1)).toNumber(), "No CRV tokens").to.be.gt(0);
-        });
-
     });
     describe('Additional deposit to create extra liquidity', () => {
         it('Additional deposit', async() => {
@@ -164,6 +154,12 @@ contract('Integrate Curve.Fi into your defi', async([ owner, defiowner, user1, u
             expect(sEURAfter.sub(sEURBefore).toString(), "Not withdrawn sEUR").to.equal(deposits.sEUR.toString());
             expect(EURSAfter.sub(EURSBefore).toString(), "Not withdrawn EURS").to.equal(deposits.EURS.toString());
 
+        });
+    });
+    describe('Can integrate Curve.Fi with main contract', () => {
+        it('Withdraw', async() => {
+            const return_value = await moneyToCurve.curveLPTokenBalanceToStableCoin(10000, curveLPToken.address, [ysEUR.address, yEURS.address]);
+            console.log(return_value.toString());
         });
     });
 });
