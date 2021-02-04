@@ -1,6 +1,8 @@
 pragma solidity ^0.6.6;
 
 // import './interfaces/ILiquidityValueCalculator.sol';
+import "hardhat/console.sol";
+
 import '@uniswap/v2-periphery/contracts/libraries/UniswapV2Library.sol';
 import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
@@ -14,22 +16,23 @@ contract UniswapConnector {
     }
 
     function pairInfo(address tokenA, address tokenB)
-        public
-        view
+        private
         returns (uint reserveA, uint reserveB, uint totalSupply)
     {
         IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB));
-        // if (pair == address(0)) {
-        //     IUniswapV2Factory(factory).createPair(tokenA, tokenB);
-        // }
+        if (IUniswapV2Factory(factory).getPair(tokenA, tokenB) == address(0)) {
+            console.log('Pair not found, creating it');
+            IUniswapV2Factory(factory).createPair(tokenA, tokenB);
+        }
+
         totalSupply = pair.totalSupply();
+
         (uint reserves0, uint reserves1,) = pair.getReserves();
+
+        console.log(totalSupply, reserves0, reserves1);
+
         (reserveA, reserveB) = tokenA == pair.token0() ? (reserves0, reserves1) : (reserves1, reserves0);
     }
-
-    // function getInfo() public returns (address facto) {
-    //     facto = IUniswapV2Router02.factory();
-    // }
 
     function computeLiquidityShareValue(
         uint liquidity,
