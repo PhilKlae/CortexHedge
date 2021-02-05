@@ -34,7 +34,7 @@ contract SwapContract is SwapRedeemer {
         Dai = ERC20(new_token_address);
     }
 
-    /* view your current balance */
+    /* view your current balance 
     function get_EURFIX_to_Dai(address _address) public view returns (uint256) {
         uint256 _amount = EURFIX.balanceOf(_address);
         require(_amount > 0, "Balance is zero");
@@ -61,7 +61,7 @@ contract SwapContract is SwapRedeemer {
     {
         return _Dai_to_EUR(get_USDFLOAT_to_Dai(_address));
     }
-
+    */
     function get_current_phase() public view returns (InvestmentPhase) {
         return current_phase;
     }
