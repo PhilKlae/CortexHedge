@@ -11,7 +11,7 @@ describe("DaiToAave functions", function () {
     let addrs;
     let DaiToAveFactory;
     let daiToAave;
-
+    let AaveExample;
     const whale = '0x04ad0703b9c14a85a02920964f389973e094e153';
 
 
@@ -39,6 +39,10 @@ describe("DaiToAave functions", function () {
         DaiToAveFactory = await ethers.getContractFactory("DaiToAdai");
     
         daiToAave = await DaiToAveFactory.deploy();
+        
+        AaveExampleFactory = await ethers.getContractFactory("AaveExample");
+    
+        AaveExample = await AaveExampleFactory.deploy();
         
         
     });
@@ -100,43 +104,45 @@ describe("DaiToAave functions", function () {
         balance = await OccupyDAI(owner,DaiAmount);
         let lendAmount = 2500;
 
-        ownerAave = daiToAave.connect(owner);
+        ownerAave = AaveExample.connect(owner);
 
-        pool = await daiToAave.GetLendingPoolAdress();
+        //pool = await daiToAave.GetLendingPoolAdress();
         //let principal = await ownerAave.GetPrincipalAmount();
         //console.log(principal);
-        console.log("adding allowance");
+        console.log("Getting contracts from address");
         let dai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');                
-        let adai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x363edC62b8236a0079c00320340485Ee0E7B17ae'); 
+        let adai = await ethers.getContractAt('@aave/protocol-v2/contracts/interfaces/IAToken.sol:IAToken', '0x363edC62b8236a0079c00320340485Ee0E7B17ae'); 
 
-        await dai.connect(owner).approve(pool, ethers.utils.parseEther(""+lendAmount));
-        allowance = await dai.allowance(daiToAave.address,pool);
-        console.log("allowance is: " + allowance);
-        console.log(pool);
-        const lending_pool_address = await daiToAave.getLending();
-        dai.transfer(daiToAave.address, lendAmount);
-        console.log("lending pool address is", lending_pool_address);
-
-        
+        console.log("giving allowance to test contract for dai spending");
+        await dai.connect(owner).approve(AaveExample.address, ethers.utils.parseEther(""+lendAmount));
+        allowance = await dai.allowance(owner.address,pool);
+        console.log("allowance for aaveexample to spend owner DAI is: " + allowance);      
+                        
         const s0 = await adai.totalSupply();
 
         console.log("total adai supply" ,s0.toString());
 
-        let b1 = await dai.balanceOf(daiToAave.address);
+        let b1 = await dai.balanceOf(AaveExample.address);
         let b2 = await dai.balanceOf(owner.address);
 
-        console.log("dai balance before", b1.toString());
-        console.log("dai balance before", b2.toString());
+        console.log("dai Aaveexample balance before", b1.toString());
+        console.log("dai owner balance before", b2.toString());
 
-        await daiToAave.connect(owner).deposit_new();
+        await AaveExample.connect(owner).contractDepositDai( ethers.utils.parseEther(""+lendAmount));
         
-        b1 = await dai.balanceOf(daiToAave.address);
+        b1 = await dai.balanceOf(AaveExample.address);
         b2 = await dai.balanceOf(owner.address);
         
-        console.log("dai balance after", b1.toString());
-        console.log("dai balance after", b2.toString());
+        console.log("dai Aaveexample balance after", b1.toString());
+        console.log("dai owner balance after ", b2.toString());
 
-        await daiToAave.connect(owner).withdraw_new();
+        b1 = await adai.balanceOf(AaveExample.address);
+        b2 = await adai.balanceOf(owner.address);
+
+        console.log("adai Aaveexample balance after", b1.toString());
+        console.log("adai owner balance after ", b2.toString());
+        
+      //  await daiToAave.connect(owner).withdraw_new();
         //await ownerAave.deposit (pool, dai.address , ethers.utils.parseEther(""+lendAmount));
         //expect (allowance).to.equal(ethers.utils.parseEther(""+lendAmount));
        
