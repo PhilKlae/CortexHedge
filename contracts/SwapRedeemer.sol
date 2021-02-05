@@ -8,9 +8,11 @@ pragma solidity 0.7.3;
 
 import "./SwapMinter.sol";
 import "hardhat/console.sol";
+import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 
 abstract contract SwapRedeemer is SwapMinter {
     using SafeMath for uint256;
+    using SafeMath for int256;
     using Math for uint256;
 
     // exchange rate informations
@@ -81,25 +83,31 @@ abstract contract SwapRedeemer is SwapMinter {
     function redeem(uint256 EURFIX_amount, uint256 USDFLOAT_amount) public {
         require(
             EURFIX_amount == USDFLOAT_amount,
-            "Only equal split allowed"
+            "Must exchange same amount of EURFIX and USDFLOAT"
         );
-
         // burn ingoing tokens
-        EURFIX.burn(EURFIX_amount);
-        USDFLOAT.burn(USDFLOAT_amount);
+        EURFIX.burnFrom(msg.sender, EURFIX_amount);
+        USDFLOAT.burnFrom(msg.sender, USDFLOAT_amount);
 
         // estimate return on capital and return share earned (use that USD amount is indep. of exchange rate here)
         uint256 Dai_returned =
             USDFLOAT_amount.mul(2).mul(total_pool_balance).div(
                 total_pool_prinicipal
             );
+        console.log(
+            "amount invested:",
+            EURFIX_amount.add(USDFLOAT_amount),
+            "amount returned:",
+            Dai_returned
+        );
         emit Shares_Redeemed(msg.sender, Dai_returned, uint256(getEUROPrice()));
+        Dai.transfer(msg.sender, Dai_returned);
     }
 
     // redeem derivative tokens
     function redeem_EURFIX(uint256 EURFIX_amount) external  isRedeemingsPhase() {
         // require(saving_is_over, "Saving period has not stopped yet");
-        uint256 usd_amount_retail = EURFIX_to_Dai(EURFIX_amount);
+        uint256 usd_amount_retail = EURFIX_to_Dai(EURFIX_amount, final_EURFIX_payout_rate);
         EURFIX.burnFrom(msg.sender, EURFIX_amount);
         Dai.transfer(msg.sender, usd_amount_retail);
         emit Redeemed_EURFIX(msg.sender, EURFIX_amount, exchange_rate_end);
@@ -110,7 +118,7 @@ abstract contract SwapRedeemer is SwapMinter {
 
     function redeem_USDFLOAT(uint256 USDFLOAT_amount) external  isRedeemingsPhase() {
         // require(saving_is_over, "Saving period has not stopped yet");
-        uint256 usd_amount_hedger = USDFLOAT_to_Dai(USDFLOAT_amount);
+        uint256 usd_amount_hedger = USDFLOAT_to_Dai(USDFLOAT_amount, final_USDFLOAT_payout);
         USDFLOAT.burnFrom(msg.sender, USDFLOAT_amount);
         Dai.transfer(msg.sender, usd_amount_hedger);
         emit Redeemed_EURFIX(msg.sender, USDFLOAT_amount, exchange_rate_end);
@@ -120,43 +128,42 @@ abstract contract SwapRedeemer is SwapMinter {
     }
 
     // redeem EURFIX tokens
-    function EURFIX_to_Dai(uint256 _amount) public view returns (uint256) {
-        uint256 interest_part = EURFIX_interest(_amount, exchange_rate_start);
+    function EURFIX_to_Dai(uint256 _amount, uint _EUFIXpayoutRate) public view returns (uint256) {
+        uint256 interest_part = _EURFIX_interest(_amount);
         uint256 principal_part =
-            EURFIX_to_dollar(_amount, final_EURFIX_payout_rate);
+            _EURFIX_to_dollar(_amount, _EUFIXpayoutRate);
         return principal_part.add(interest_part);
     }
 
     // convert back to initial exchange rate to calculate share of earned interest
-    function EURFIX_interest(uint256 _amount, uint256 _exchange_rate)
+    function _EURFIX_interest(uint256 _amount)
         internal
         view
         returns (uint256)
     {
         return
             _amount
-                .mul(_exchange_rate)
                 .mul(final_interest_earned)
                 .div(total_pool_prinicipal)
                 .div(chainlink_decimals); //
     }
 
-    function EURFIX_to_dollar(uint256 _amount, uint256 _exchange_rate)
+    function _EURFIX_to_dollar(uint256 _amount, uint256 _EUFIXpayoutRate)
         internal
         view
         returns (uint256)
     {
-        return _amount.mul(_exchange_rate).div(chainlink_decimals);
+        return _amount.mul(_EUFIXpayoutRate).div(chainlink_decimals);
     }
 
     // redeem USDFLOAT tokens
-    function USDFLOAT_to_Dai(uint256 _amount) public view returns (uint256) {
-        uint256 interest_part = USDFLOAT_interest(_amount);
-        uint256 principal_part = USDFLOAT_to_dollar(_amount);
+    function USDFLOAT_to_Dai(uint256 _amount, uint256 _USDFLOATpayoutRate) public view returns (uint256) {
+        uint256 interest_part = _USDFLOAT_interest(_amount);
+        uint256 principal_part = _USDFLOAT_to_dollar(_amount, _USDFLOATpayoutRate);
         return principal_part.add(interest_part);
     }
 
-    function USDFLOAT_interest(uint256 _amount)
+    function _USDFLOAT_interest(uint256 _amount)
         internal
         view
         returns (uint256)
@@ -164,34 +171,52 @@ abstract contract SwapRedeemer is SwapMinter {
         return _amount.mul(final_interest_earned).div(total_pool_prinicipal);
     }
 
-    function USDFLOAT_to_dollar(uint256 _amount)
+    function _USDFLOAT_to_dollar(uint256 _amount, uint256 _USDFLOATpayoutRate)
         internal
         view
         returns (uint256)
     {
-        return _amount.mul(final_USDFLOAT_payout).div(chainlink_decimals);
+        return _amount.mul(_USDFLOATpayoutRate).div(chainlink_decimals);
     }
 
     // limit exchange rate movements hedged by the contract to 50% up/down
-    // max(min(e_T/e_0, 1 + 1 /leverage), 1/leverage)
-    // e.g. for leverage = 2: ouput is bounded by 50%.
-    // see: valuation exercise.txt
-    // payout is always [0,2]
-    // in theory: limit payout << payout factor since value increase allows higher payout
     function calculate_EURFIX_payout(uint256 _exchange_rt)
         public
         view
         returns (uint256)
     {       
-        console.log("calculate_EURFIX_payout()");
-        uint256 min_payout_factor =
-            (chainlink_decimals.add(leverage_inverse)).mul(exchange_rate_start); // (1 + 1/leverage) * e_0
-        console.log("Min payout factor is:", min_payout_factor);
-        uint256 max_payout_factor =
-            (chainlink_decimals.sub(leverage_inverse)).mul(exchange_rate_start); // (1 - 1/leverage) * e_0
-        console.log("Max payout factor is:", max_payout_factor);
-        return
-            _exchange_rt.max(min_payout_factor).min(max_payout_factor); // min(max(e, min_value), max_value)*leverage
+        console.log("calculate_USDFLOAT_payout()");
+        uint256 payout_fac_constrained;
+        uint256 max_payout_factor = 2 * chainlink_decimals; // 2  
+        if (_exchange_rt > exchange_rate_start) {
+            /* payout for 1: 
+                            min(1 +  (e1 - e0)/e0 * leverage, 2) 
+            */
+            console.log("euro lost value");
+            uint exchange_rate_delta = _exchange_rt.sub(exchange_rate_start).mul(chainlink_decimals).div(exchange_rate_start); // (e1 - e0)/e0 
+            uint exchange_rate_delta_leverage = exchange_rate_delta.mul(leverage); // (e1 - e0)/e0 * leverage
+            uint payout_fac = chainlink_decimals.add(exchange_rate_delta_leverage); // 1 + (e1 - e0)/e0 * leverage 
+            payout_fac_constrained = payout_fac.min(max_payout_factor); // fac = min(1+ (e1 - e0)/e0 * leverage , 2)
+
+        }   
+        else if (_exchange_rt < exchange_rate_start) {
+            /* payout for 1: 
+                            max(1 +  (e1 - e0)/e0 * leverage, 0)
+                    <=>     max(1 -  (e0 - e1)/e0 * leverage, 0)
+                    <=> 1 - min(     (e0 - e1)/e0 * leverage, 1)
+            */
+            console.log("euro gained value");
+            uint exchange_rate_delta_inv = exchange_rate_start.sub(_exchange_rt).mul(chainlink_decimals).div(exchange_rate_start);  // (e0 - e1)/e0
+            uint exchange_rate_delta_inv_leverage = exchange_rate_delta_inv.mul(leverage); // (e0 - e1)/e0 * leverage
+            uint exchange_rate_delta_inv_leverage_constrained = exchange_rate_delta_inv_leverage.min(chainlink_decimals); // min((e0 - e1)/e0 * leverage,1)
+            payout_fac_constrained = chainlink_decimals.sub(exchange_rate_delta_inv_leverage_constrained);
+        }
+        else {
+            console.log("exchange rate constant");
+            payout_fac_constrained = chainlink_decimals; // fac = 1
+        }
+  
+        return payout_fac_constrained; // min(max(e, min_value), max_value)*leverage
     }
 
     // payout is always [0,2]
@@ -200,18 +225,10 @@ abstract contract SwapRedeemer is SwapMinter {
         view
         returns (uint256)
     {
-        console.log("calculate_USDFLOAT_payout()");
-        uint256 ratio =
-            _exchange_rt.mul(chainlink_decimals).div(exchange_rate_start); // e_T/e_0 // 8 cecimals
-        console.log("Ratio is: ", ratio);
-        uint256 max_payout_factor = chainlink_decimals.add(leverage_inverse); // (1 + 1/leverage) // 8 cecimals
-        console.log("Max payout factors is: ", max_payout_factor);
-        uint256 min_payout_factor = chainlink_decimals.sub(leverage_inverse); // (1 - 1/leverage) // 7 cecimals
-        console.log("Min payout factors is: ", min_payout_factor);
-        ratio = ratio.max(min_payout_factor).min(max_payout_factor); // max(min(e_T/e_1, 1 + 1/leverage), 1 - 1/leverage) 
-        console.log("Ratio is: ", ratio);
         uint256 normalizer = 2 * chainlink_decimals;
         console.log("Normalizer is: ", normalizer);
-        return normalizer.sub(ratio).div(10); // 2 - max(min(e_T/e_1, 1 + 1/leverage), 1 - 1/leverage) * leverage
+        uint payour_rt_constrained = normalizer.sub(calculate_EURFIX_payout(_exchange_rt));
+        return 
+            payour_rt_constrained;
     }
 }

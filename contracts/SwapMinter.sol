@@ -108,12 +108,12 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
 
     // mint derivative tokens
     function _mint_euro_stable(uint256 Dai_amount) internal {
-        uint256 EURFIX_amount = _Dai_to_EURFIX(Dai_amount);
-        EURFIX.mint(msg.sender, EURFIX_amount);
+        // uint256 EURFIX_amount = _Dai_to_EURFIX(Dai_amount);
+        EURFIX.mint(msg.sender, Dai_amount);
     }
 
     function _Dai_to_EURFIX(uint256 _amount) internal view returns (uint256) {
-        return _amount.mul(10**8).div(uint256(getEUROPrice()));
+        return _amount.mul(10**8).div(exchange_rate_start);
     }
 
     function _mint_euro_unstable(uint256 Dai_amount) internal {
