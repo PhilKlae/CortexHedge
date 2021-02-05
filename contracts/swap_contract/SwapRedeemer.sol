@@ -53,6 +53,9 @@ abstract contract SwapRedeemer is SwapMinter {
     );
 
     function start_redeeming() public onlyOwner {
+        //get 100% of DAI back from aave, including principal
+        userWithdrawDai(uint(-1));//TODO more precise number? maybe balanceof adai?
+
         // allow minting of tokens
         current_phase = InvestmentPhase.Redeeming;
 
@@ -91,7 +94,7 @@ abstract contract SwapRedeemer is SwapMinter {
 
         // estimate return on capital and return share earned (use that USD amount is indep. of exchange rate here)
         uint256 Dai_returned =
-            USDFLOAT_amount.mul(2).mul(total_pool_balance).div(
+            USDFLOAT_amount.mul(2).mul(currentPoolBalance()).div( 
                 total_pool_prinicipal
             );
         console.log(
@@ -101,7 +104,16 @@ abstract contract SwapRedeemer is SwapMinter {
             Dai_returned
         );
         emit Shares_Redeemed(msg.sender, Dai_returned, uint256(getEUROPrice()));
+        
+        userWithdrawDai(Dai_returned);//TODO Check if this is correct number, Replace with a function that also withdraws from curve
+        
+        total_pool_prinicipal -= (EURFIX_amount.add(USDFLOAT_amount));
+        
         Dai.transfer(msg.sender, Dai_returned);
+    }
+
+    function currentPoolBalance() internal returns(uint256){
+        return GetAdaiAmount();//total_pool_balance is 100% aave atm
     }
 
     // redeem derivative tokens
@@ -231,4 +243,6 @@ abstract contract SwapRedeemer is SwapMinter {
         return 
             payour_rt_constrained;
     }
+
+    
 }

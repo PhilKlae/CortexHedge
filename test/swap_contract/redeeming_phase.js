@@ -9,7 +9,7 @@ describe("Swap Contract", function () {
   let hardhatEURFIX;
   let USDFLOAT;
   let hardhatUSDFLOAT;
-  let DAI;
+  
   let hardhatDAI;
 
   let owner;
@@ -29,6 +29,11 @@ describe("Swap Contract", function () {
   beforeEach('Set up accounts', async () => {
     // get addresses to interact
     [owner, minter, redeemer, ...addrs] = await ethers.getSigners();
+
+    await OccupyDAI(owner, 50000);
+    await OccupyDAI(minter, 50000);
+    await OccupyDAI(redeemer, 50000);  
+
   });
   
   beforeEach('Deploy Contracts', async () => {
@@ -44,10 +49,8 @@ describe("Swap Contract", function () {
     USDFLOAT = await ethers.getContractFactory("USDFLOAT");
     hardhatUSDFLOAT = await USDFLOAT.connect(redeemer).deploy(hardhatSwapContract.address);
     await hardhatUSDFLOAT.deployed();
-
-    DAI = await ethers.getContractFactory("DAI");
-    hardhatDAI = await DAI.connect(owner).deploy(totalDAISupply);
-    await hardhatDAI.deployed();
+    
+    hardhatDAI = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');    
 
     // give derivative contract address to main address
     await hardhatSwapContract.set_EURFIX_address(hardhatEURFIX.address);
@@ -175,4 +178,53 @@ describe("Swap Contract", function () {
 
     });
   });
+
+  const impersonateAddress = async (address) => {
+    await hre.network.provider.request({
+      method: "hardhat_impersonateAccount",
+      params: [address],
+    });
+
+    const signer = await ethers.provider.getSigner(address);
+    signer.address = signer._address;
+
+    return signer;
+  }
+  
+  async function OccupyDAI(new_owner, transferAmount) {
+
+    let dai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');
+    const whale = '0x04ad0703b9c14a85a02920964f389973e094e153';
+    const whaleSigner = await impersonateAddress(whale);
+
+    
+
+    let balance = await dai.balanceOf(whale);
+   /* console.log(
+      "whale balance (before) ",
+      ethers.utils.formatEther(balance)
+    );*/
+
+    balance = await dai.balanceOf(new_owner.address);
+  /*  console.log(
+      "our very own balance (before) ",
+      ethers.utils.formatEther(balance)
+    );*/
+
+    dai = dai.connect(whaleSigner);
+
+    await dai.transfer(new_owner.address, ethers.utils.parseEther("" + transferAmount));
+
+    balance = await dai.balanceOf(new_owner.address);
+
+    /*console.log(
+      "our very own balance (after) ",
+      ethers.utils.formatEther(balance)
+    )*/
+
+    return balance;
+
+
+  }
+
 });        
