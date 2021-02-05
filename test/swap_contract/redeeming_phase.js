@@ -158,5 +158,21 @@ describe("Swap Contract", function () {
       await hardhatSwapContract.start_redeeming();
       await hardhatSwapContract.connect(owner).redeem_EURFIX(5);
     });
+    it("Should calculate the correct EURFIX payout factor given a exchange rate", async function () {
+      const exchange_rate = await hardhatSwapContract.getEUROPrice();
+      console.log(
+        "Payout by current exchange rate of",
+        exchange_rate.toString() + "\n",
+        (await hardhatSwapContract.calculate_EURFIX_payout(exchange_rate)).toString()
+      );
+      // change exchange rate
+      const exchange_rate_new = exchange_rate.sub("1000");
+      console.log(
+        "Payout by current exchange rate of",
+        exchange_rate_new.toString() + "\n",
+        (await hardhatSwapContract.calculate_EURFIX_payout(exchange_rate_new)).toString()
+      );
+
+    });
   });
-});
+});        
