@@ -38,7 +38,7 @@ contract AaveExample {
     }
 
     function userWithdrawDai(uint256 _amountInDai) external {
-        aaveLendingPool.withdraw(address(dai), _amountInDai, address(this));
+        aaveLendingPool.withdraw(address(dai), _amountInDai, address(this));//use adai as asset address?
     }
 }
 

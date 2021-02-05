@@ -128,6 +128,8 @@ describe("DaiToAave functions", function () {
         console.log("dai Aaveexample balance before", b1.toString());
         console.log("dai owner balance before", b2.toString());
 
+        //deposit       
+         console.log("DEPOSIT");
         await AaveExample.connect(owner).contractDepositDai( ethers.utils.parseEther(""+lendAmount));
         
         b1 = await dai.balanceOf(AaveExample.address);
@@ -141,8 +143,20 @@ describe("DaiToAave functions", function () {
 
         console.log("adai Aaveexample balance after", b1.toString());
         console.log("adai owner balance after ", b2.toString());
-        
-      //  await daiToAave.connect(owner).withdraw_new();
+
+        //withdraw
+        console.log("WITHDRAW");
+        await AaveExample.connect(owner).userWithdrawDai(ethers.utils.parseEther(""+lendAmount));
+      
+        console.log("dai Aaveexample balance after", b1.toString());
+        console.log("dai owner balance after ", b2.toString());
+
+        b1 = await adai.balanceOf(AaveExample.address);
+        b2 = await adai.balanceOf(owner.address);
+
+        console.log("adai Aaveexample balance after", b1.toString());
+        console.log("adai owner balance after ", b2.toString());
+
         //await ownerAave.deposit (pool, dai.address , ethers.utils.parseEther(""+lendAmount));
         //expect (allowance).to.equal(ethers.utils.parseEther(""+lendAmount));
        
