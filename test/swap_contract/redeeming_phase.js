@@ -17,6 +17,9 @@ describe("Swap Contract", function () {
   let redeemer;
   let addrs;
 
+  let EURFIX_amount;
+  let USDFLOAT_amount;
+
   // test data. Use BigNumber to avoid overflow
   const totalDAISupply = ethers.BigNumber.from("1000000000000000000000"); // 1000
   const initialContractBalance = ethers.BigNumber.from("100000000000000000000"); // 100
@@ -63,10 +66,29 @@ describe("Swap Contract", function () {
       // send some initial Dai to the contract
       await hardhatSwapContract.start_saving();
       // start minting coins 
-      await hardhatDAI.approve(hardhatSwapContract.address, approvedAmount);
-      await hardhatSwapContract.invest(approvedAmount);
+      await hardhatDAI.connect(owner).approve(hardhatSwapContract.address, approvedAmount);
+      const dai_allowance = await hardhatDAI.allowance(owner.address, hardhatSwapContract.address);
+      console.log(
+        "Swap contract can spend up to ",
+        dai_allowance.toString(),
+        "Dai"
+      );
+      await hardhatSwapContract.connect(owner).invest(approvedAmount);
+      console.log(
+        "Owner has ", 
+        ethers.utils.formatEther(await hardhatEURFIX.balanceOf(owner.address)),
+        "EURFIX and ", 
+        ethers.utils.formatEther(await hardhatUSDFLOAT.balanceOf(owner.address)), 
+        "USDFLOAT");
+      EURFIX_amount = await hardhatEURFIX.balanceOf(owner.address);
+      USDFLOAT_amount = await hardhatUSDFLOAT.balanceOf(owner.address);
       //await hardhatDAI.transfer(hardhatSwapContract.address, 5000000); // simulate some interest earned
   });
+  beforeEach('Give allowance to burn EURFIX/USDFLOAT', async () => {
+    // send some initial Dai to the contract
+    await hardhatUSDFLOAT.connect(owner).approve(hardhatSwapContract.address, approvedAmount);
+    await hardhatEURFIX.connect(owner).approve(hardhatSwapContract.address, approvedAmount);
+});
 
   describe("Start the redeeming phase", function () {
     it("Should allow Owner to start the redeeming phase", async function () {
@@ -96,5 +118,61 @@ describe("Swap Contract", function () {
       expect(new_phase).to.equal(2);
     });
   });
-});
+  describe("Should redeem the correct amount of tokens", function () {
+    it("Should allow Whale to redeem both tokens", async function () {
+      // contract call
+      console.log(
+        "Swap contract can spend up to ",
+        (await hardhatUSDFLOAT.allowance(owner.address, hardhatSwapContract.address)).toString(),
+        "USDFLOAT"
+      );
+      console.log(
+        "Swap contract can spend up to ",
+        (await hardhatEURFIX.allowance(owner.address, hardhatSwapContract.address)).toString(),
+        "EURFIX"
+      );
+      console.log(
+        "Owner has ", 
+        ethers.utils.formatEther(await hardhatDAI.balanceOf(owner.address)),
+        "DAI ")
 
+      hardhatSwapContract.redeem(EURFIX_amount,USDFLOAT_amount);
+      console.log(
+        "Owner has ", 
+        ethers.utils.formatEther(await hardhatEURFIX.balanceOf(owner.address)),
+        "EURFIX and ", 
+        ethers.utils.formatEther(await hardhatUSDFLOAT.balanceOf(owner.address)), 
+        "USDFLOAT");
+      console.log(
+        "Owner has ", 
+        ethers.utils.formatEther(await hardhatDAI.balanceOf(owner.address)),
+        "DAI ")
+
+    });
+    it("Should not allow Whale to redeem both with uneven numbers", async function () {
+      await expect(
+        hardhatSwapContract.redeem(EURFIX_amount.sub("1"),USDFLOAT_amount)
+      ).to.be.revertedWith("Must exchange same amount of EURFIX and USDFLOAT");
+    });
+    it("Should allow person to one token at a time", async function () {
+      await hardhatSwapContract.start_redeeming();
+      await hardhatSwapContract.connect(owner).redeem_EURFIX(5);
+    });
+    it("Should calculate the correct EURFIX payout factor given a exchange rate", async function () {
+      const exchange_rate = await hardhatSwapContract.getEUROPrice();
+      console.log(
+        "Payout by current exchange rate of",
+        exchange_rate.toString() + "\n",
+        (await hardhatSwapContract.calculate_EURFIX_payout(exchange_rate)).toString()
+      );
+      // change exchange rate
+      const exchange_rate_new = exchange_rate.sub("1000");
+      console.log(
+        "Payout by current exchange rate of",
+        exchange_rate_new.toString() + "\n",
+        (await hardhatSwapContract.calculate_EURFIX_payout(exchange_rate_new)).toString()
+      );
+
+    });
+  });
+});        
