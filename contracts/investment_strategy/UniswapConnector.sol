@@ -1,6 +1,5 @@
 pragma solidity ^0.6.6;
 
-// import './interfaces/ILiquidityValueCalculator.sol';
 import "hardhat/console.sol";
 
 import '@uniswap/v2-periphery/contracts/libraries/UniswapV2Library.sol';
@@ -9,28 +8,34 @@ import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 
 contract UniswapConnector {
-    address public factory;
+    address public immutable factoryAddress;
+    address public immutable routerAddress;
 
-    constructor(address factory_) public {
-        factory = factory_;
+    constructor(address _factory, address _router) public {
+        factoryAddress = _factory;
+        routerAddress = _router;
+    }
+
+    function createPool(address tokenA, address tokenB) external {
+        IUniswapV2Factory(factoryAddress).createPair(tokenA, tokenB);
+        address pool = IUniswapV2Factory(factoryAddress).getPair(tokenA, tokenB);
+
+        require(pool != address(0), "Pool creation failed");
     }
 
     function getPairAddress(address tokenA, address tokenB)
         public
+        view
         returns (address pairAddress)
     {
-        pairAddress = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
-        if (pairAddress == address(0)) {
-            console.log('Pair not found, creating it');
-            IUniswapV2Factory(factory).createPair(tokenA, tokenB);
-            pairAddress = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
-        }
+        pairAddress = IUniswapV2Factory(factoryAddress).getPair(tokenA, tokenB);
+        
+        require(pairAddress != address(0), "Pool does not exist yet, please create it");
     }
 
-    // function addLiquidity
-
     function pairInfo(address tokenA, address tokenB)
-        private
+        external
+        view
         returns (uint reserveA, uint reserveB, uint totalSupply)
     {
         address pairAddress = getPairAddress(tokenA, tokenB);
@@ -40,23 +45,7 @@ contract UniswapConnector {
         
         (uint reserves0, uint reserves1,) = pair.getReserves();
 
-        console.log(totalSupply, reserves0, reserves1);
-
         (reserveA, reserveB) = tokenA == pair.token0() ? (reserves0, reserves1) : (reserves1, reserves0);
-    }
-
-    function computeLiquidityShareValue(
-        uint liquidity,
-        address tokenA,
-        address tokenB
-    )
-        external
-        returns (uint tokenAAmount, uint tokenBAmount)
-    {
-        (uint reserveA, uint reserveB, uint totalSupply) = pairInfo(tokenA, tokenB);
-        uint tokenAAmount = reserveA;
-        uint tokenBAmount = reserveB;
-        // revert('TODO');
     }
 
     // I need to retrieve the price of DAI/ETH before making the swap, to preevent front running
@@ -72,3 +61,28 @@ contract UniswapConnector {
     //     UniswapV2Router02.swapExactTokensForETH(amountIn, amountOutMin, path, msg.sender, block.timestamp);
     // }
 }
+
+    // function addLiquidity(
+    //     address tokenA,
+    //     address tokenB,
+    //     uint amountADesired,
+    //     uint amountBDesired,
+    //     uint amountAMin,
+    //     uint amountBMin
+    // )
+    //     external
+    //     returns (uint amountA, uint amountB, uint liquidity)
+    // {
+    //     IUniswapV2Router02 router = IUniswapV2Router02(routerAddress);
+
+    //     (amountA, amountB, liquidity) = router.addLiquidity(
+    //         tokenA,
+    //         tokenB,
+    //         amountADesired,
+    //         amountBDesired,
+    //         amountAMin,
+    //         amountBMin,
+    //         routerAddress,
+    //         now + 15
+    //     );
+    // }
