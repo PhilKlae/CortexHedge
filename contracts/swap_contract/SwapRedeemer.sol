@@ -63,19 +63,19 @@ abstract contract SwapRedeemer is SwapMinter {
 
         // calculate global numbers once to save gas
         final_total_pool_balance = Dai.balanceOf(address(this));
-        console.log("Final pool balance is: ", final_total_pool_balance);
-        console.log("Final pool principal is: ", total_pool_prinicipal);
+        //console.log("Final pool balance is: ", final_total_pool_balance);
+        //console.log("Final pool principal is: ", total_pool_prinicipal);
         
         // check how much return was generate on assets
         final_interest_earned = final_total_pool_balance.sub(
             total_pool_prinicipal
         );
-        console.log("Interest earned is: ", final_interest_earned);
+        //console.log("Interest earned is: ", final_interest_earned);
         // check what the final payout of the derivative is
         final_EURFIX_payout_rate = calculate_EURFIX_payout(exchange_rate_end);
-        console.log("EURFIX payout rate is: ", final_EURFIX_payout_rate);
+        //console.log("EURFIX payout rate is: ", final_EURFIX_payout_rate);
         final_USDFLOAT_payout = calculate_USDFLOAT_payout(exchange_rate_end);
-        console.log("USDFLOAT payout rate is: ", final_EURFIX_payout_rate);
+        //console.log("USDFLOAT payout rate is: ", final_EURFIX_payout_rate);
     }
 
     modifier isRedeemingsPhase() {
@@ -118,7 +118,6 @@ abstract contract SwapRedeemer is SwapMinter {
 
     // redeem derivative tokens
     function redeem_EURFIX(uint256 EURFIX_amount) external  isRedeemingsPhase() {
-        // require(saving_is_over, "Saving period has not stopped yet");
         uint256 usd_amount_retail = EURFIX_to_Dai(EURFIX_amount, final_EURFIX_payout_rate);
         EURFIX.burnFrom(msg.sender, EURFIX_amount);
         Dai.transfer(msg.sender, usd_amount_retail);
@@ -129,7 +128,6 @@ abstract contract SwapRedeemer is SwapMinter {
     }
 
     function redeem_USDFLOAT(uint256 USDFLOAT_amount) external  isRedeemingsPhase() {
-        // require(saving_is_over, "Saving period has not stopped yet");
         uint256 usd_amount_hedger = USDFLOAT_to_Dai(USDFLOAT_amount, final_USDFLOAT_payout);
         USDFLOAT.burnFrom(msg.sender, USDFLOAT_amount);
         Dai.transfer(msg.sender, usd_amount_hedger);
@@ -197,7 +195,7 @@ abstract contract SwapRedeemer is SwapMinter {
         view
         returns (uint256)
     {       
-        console.log("calculate_USDFLOAT_payout()");
+        //console.log("calculate_USDFLOAT_payout()");
         uint256 payout_fac_constrained;
         uint256 max_payout_factor = 2 * chainlink_decimals; // 2  
         if (_exchange_rt > exchange_rate_start) {
@@ -238,7 +236,7 @@ abstract contract SwapRedeemer is SwapMinter {
         returns (uint256)
     {
         uint256 normalizer = 2 * chainlink_decimals;
-        console.log("Normalizer is: ", normalizer);
+        //console.log("Normalizer is: ", normalizer);
         uint payour_rt_constrained = normalizer.sub(calculate_EURFIX_payout(_exchange_rt));
         return 
             payour_rt_constrained;
