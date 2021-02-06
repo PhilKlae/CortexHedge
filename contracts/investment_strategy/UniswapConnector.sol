@@ -15,18 +15,29 @@ contract UniswapConnector {
         factory = factory_;
     }
 
+    function getPairAddress(address tokenA, address tokenB)
+        public
+        returns (address pairAddress)
+    {
+        pairAddress = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
+        if (pairAddress == address(0)) {
+            console.log('Pair not found, creating it');
+            IUniswapV2Factory(factory).createPair(tokenA, tokenB);
+            pairAddress = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
+        }
+    }
+
+    // function addLiquidity
+
     function pairInfo(address tokenA, address tokenB)
         private
         returns (uint reserveA, uint reserveB, uint totalSupply)
     {
-        IUniswapV2Pair pair = IUniswapV2Pair(UniswapV2Library.pairFor(factory, tokenA, tokenB));
-        if (IUniswapV2Factory(factory).getPair(tokenA, tokenB) == address(0)) {
-            console.log('Pair not found, creating it');
-            IUniswapV2Factory(factory).createPair(tokenA, tokenB);
-        }
+        address pairAddress = getPairAddress(tokenA, tokenB);
+        IUniswapV2Pair pair = IUniswapV2Pair(pairAddress);
 
         totalSupply = pair.totalSupply();
-
+        
         (uint reserves0, uint reserves1,) = pair.getReserves();
 
         console.log(totalSupply, reserves0, reserves1);

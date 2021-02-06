@@ -1,5 +1,5 @@
-const { BN } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
+const { utils } = require("ethers");
 
 const ERC20 = artifacts.require('Stub_ERC20');
 const YERC20 = artifacts.require('Stub_YERC20');
@@ -13,14 +13,20 @@ const CurveGauge = artifacts.require('Stub_CurveFi_Gauge');
 
 const MoneyToCurve = artifacts.require('MoneyToCurve');
 
+const decimals = {
+    sEUR: 18,
+    EURS: 2
+}
 const supplies = {
-    sEUR: new BN('1000000000000000000000000'),
-    EURS: new BN('100000000')
+    sEUR: utils.parseUnits("1000000", unit = decimals.sEUR),
+    EURS: utils.parseUnits("1000000", unit = decimals.EURS)
 };
 const deposits = {
-    sEUR: new BN('100000000000000000000'), 
-    EURS: new BN('10000')
+    sEUR: utils.parseUnits("100", unit = decimals.sEUR),
+    EURS: utils.parseUnits("100", unit = decimals.EURS)
 }
+
+
 
 contract('Integrate Curve.Fi into your defi', async([ owner, defiowner, user1, user2 ]) => {
     let sEUR;
@@ -90,11 +96,11 @@ contract('Integrate Curve.Fi into your defi', async([ owner, defiowner, user1, u
         await moneyToCurve.setup(curveDeposit.address, curveGauge.address, curveMinter.address, {from:defiowner});
 
         //Preliminary balances
-        await sEUR.transfer(user1, new BN('100000000000000000000'), { from: owner });
-        await EURS.transfer(user1, new BN('10000'), { from: owner });
+        await sEUR.transfer(user1, utils.parseUnits("100", unit = decimals.sEUR), { from: owner });
+        await EURS.transfer(user1, utils.parseUnits("100", unit = decimals.EURS), { from: owner });
 
-        await sEUR.transfer(user2, new BN('100000000000000000000'), { from: owner });
-        await EURS.transfer(user2, new BN('10000'), { from: owner });
+        await sEUR.transfer(user2, utils.parseUnits("100", unit = decimals.sEUR), { from: owner });
+        await EURS.transfer(user2, utils.parseUnits("100", unit = decimals.EURS), { from: owner });
     });
 
     describe('Deposit your money into Curve.Fi', () => {
@@ -113,7 +119,8 @@ contract('Integrate Curve.Fi into your defi', async([ owner, defiowner, user1, u
             let EURSAfter = await EURS.balanceOf(user1);
 
             expect(sEURBefore.sub(sEURAfter).toString(), "Not deposited sEUR").to.equal(deposits.sEUR.toString());
-            expect(EURSBefore.sub(EURSAfter).toString(), "Not depositde EURS").to.equal(deposits.EURS.toString());
+            expect(EURSBefore.sub(EURSAfter).toString(), "Not deposited EURS").to.equal(deposits.EURS.toString());
+
         });
 
         it('Funds are wrapped with Y-tokens', async() => {
@@ -150,16 +157,29 @@ contract('Integrate Curve.Fi into your defi', async([ owner, defiowner, user1, u
                 
             let sEURAfter = await sEUR.balanceOf(user1);
             let EURSAfter = await EURS.balanceOf(user1);
-
+            //console.log(
+            //    "Balances sEUR: before, after",
+            //    sEURBefore.toString(),
+            //    sEURAfter.toString(),
+            //);
             expect(sEURAfter.sub(sEURBefore).toString(), "Not withdrawn sEUR").to.equal(deposits.sEUR.toString());
             expect(EURSAfter.sub(EURSBefore).toString(), "Not withdrawn EURS").to.equal(deposits.EURS.toString());
 
+
         });
     });
-    describe('Can integrate Curve.Fi with main contract', () => {
-        it('Withdraw', async() => {
-            const return_value = await moneyToCurve.curveLPTokenBalanceToStableCoin(10000, curveLPToken.address, [ysEUR.address, yEURS.address]);
-            console.log(return_value.toString());
+    describe('Can return the current value owned by the contract', () => {
+        it('Can return the value of tokens per unit of LP tokens', async() => {
+            const lpTokensOwned = await curveLPToken.balanceOf(moneyToCurve.address)
+            amounts = await moneyToCurve.curveLPTokenBalanceToStableCoin(lpTokensOwned, curveLPToken.address, [ysEUR.address, yEURS.address]);
+            console.log(utils.formatUnits(amounts[0].toString(), unit = 18)); // return value has 18 decimals
+            console.log(utils.formatUnits(amounts[1].toString(), unit = 18)); // return value has 18 decimals
+        });
+        it('Can return the value of stable coins owned by the pool (in LP tokens)', async() => {
+            const return_value = await moneyToCurve.getEuroValue();
+            console.log(utils.formatUnits(return_value, unit = 18)); // return value has 18 decimals
         });
     });
 });
+
+

@@ -2,6 +2,8 @@ require('@openzeppelin/hardhat-upgrades');
 require("@nomiclabs/hardhat-waffle");
 require("@nomiclabs/hardhat-truffle5");
 require('dotenv').config();
+require("solidity-coverage");
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
