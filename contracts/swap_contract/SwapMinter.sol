@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./PriceConsumerV3DAIEUR.sol";
 import "hardhat/console.sol";
+import "../Aavestuff/AaveImplementation.sol";
 
 /* Use  mock Dai token for testing purposes
 interface DaiToken {
@@ -26,7 +27,7 @@ interface DaiToken {
 }
 */
 
-contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
+contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
     using SafeMath for uint256;
     using Math for uint256;
 
@@ -85,11 +86,17 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
         // balance must be larger than 0 to start the savings process 
         total_pool_prinicipal = current_balance;
         total_pool_balance = current_balance;
+
+
     }
 
     function invest(uint256 Dai_amount) public isSavingsPhase() {
         bool success = Dai.transferFrom(msg.sender, address(this), Dai_amount);
         require(success, "buy failed");
+
+        //invest 100% into aave, for now
+        contractDepositDai(Dai_amount);
+
         _mint_tokens(Dai_amount);
         emit Shares_Minted(msg.sender, Dai_amount, uint256(getEUROPrice()));
     }

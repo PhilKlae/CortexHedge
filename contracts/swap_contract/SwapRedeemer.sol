@@ -53,6 +53,9 @@ abstract contract SwapRedeemer is SwapMinter {
     );
 
     function start_redeeming() public onlyOwner {
+        //get 100% of DAI back from aave, including principal
+        userWithdrawDai(uint(-1));//TODO more precise number? maybe balanceof adai?
+
         // allow minting of tokens
         current_phase = InvestmentPhase.Redeeming;
 
@@ -60,21 +63,20 @@ abstract contract SwapRedeemer is SwapMinter {
 
         // calculate global numbers once to save gas
         final_total_pool_balance = Dai.balanceOf(address(this));
-        console.log("Final pool balance is: ", final_total_pool_balance);
-        console.log("Final pool principal is: ", total_pool_prinicipal);
+        //console.log("Final pool balance is: ", final_total_pool_balance);
+        //console.log("Final pool principal is: ", total_pool_prinicipal);
         
         // check how much return was generate on assets
         final_interest_earned = final_total_pool_balance.sub(
             total_pool_prinicipal
         );
-        console.log("Interest earned is: ", final_interest_earned);
+        //console.log("Interest earned is: ", final_interest_earned);
         // check what the final payout of the derivative is
         final_EURFIX_payout_rate = calculate_EURFIX_payout(exchange_rate_end);
-        console.log("EURFIX payout rate is: ", final_EURFIX_payout_rate);
+        //console.log("EURFIX payout rate is: ", final_EURFIX_payout_rate);
         final_USDFLOAT_payout = calculate_USDFLOAT_payout(exchange_rate_end);
-        console.log("USDFLOAT payout rate is: ", final_EURFIX_payout_rate);
+        //console.log("USDFLOAT payout rate is: ", final_EURFIX_payout_rate);
     }
-
     modifier isRedeemingsPhase() {
         require(current_phase == InvestmentPhase.Redeeming, "No savings phase currently");
         _;
@@ -90,23 +92,39 @@ abstract contract SwapRedeemer is SwapMinter {
         USDFLOAT.burnFrom(msg.sender, USDFLOAT_amount);
 
         // estimate return on capital and return share earned (use that USD amount is indep. of exchange rate here)
+        /* Dai_returned = USDFLOAT_amount * balance/principal * 2 
+        using: USDLOAT + EURFIX = 2 * USDFLOAT
+        */
         uint256 Dai_returned =
-            USDFLOAT_amount.mul(2).mul(total_pool_balance).div(
-                total_pool_prinicipal
-            );
-        console.log(
+            USDFLOAT_amount
+            .mul(currentPoolBalance())
+            .div(total_pool_prinicipal)
+            .mul(2);     
+
+        /*console.log(
             "amount invested:",
             EURFIX_amount.add(USDFLOAT_amount),
             "amount returned:",
             Dai_returned
-        );
+        );*/
         emit Shares_Redeemed(msg.sender, Dai_returned, uint256(getEUROPrice()));
+        
+        userWithdrawDai(Dai_returned);//TODO Check if this is correct number, Replace with a function that also withdraws from curve
+        
+        total_pool_prinicipal -= (EURFIX_amount.add(USDFLOAT_amount));
+        
         Dai.transfer(msg.sender, Dai_returned);
+    }
+
+    function currentPoolBalance() internal returns(uint256){
+        /* change this temporally to returning total_pool_prinicipal.
+        currenty, fork does returns adai balance as 0 */
+        return total_pool_prinicipal;
+        //return GetAdaiAmount(); //total_pool_balance is 100% aave atm
     }
 
     // redeem derivative tokens
     function redeem_EURFIX(uint256 EURFIX_amount) external  isRedeemingsPhase() {
-        // require(saving_is_over, "Saving period has not stopped yet");
         uint256 usd_amount_retail = EURFIX_to_Dai(EURFIX_amount, final_EURFIX_payout_rate);
         EURFIX.burnFrom(msg.sender, EURFIX_amount);
         Dai.transfer(msg.sender, usd_amount_retail);
@@ -117,7 +135,6 @@ abstract contract SwapRedeemer is SwapMinter {
     }
 
     function redeem_USDFLOAT(uint256 USDFLOAT_amount) external  isRedeemingsPhase() {
-        // require(saving_is_over, "Saving period has not stopped yet");
         uint256 usd_amount_hedger = USDFLOAT_to_Dai(USDFLOAT_amount, final_USDFLOAT_payout);
         USDFLOAT.burnFrom(msg.sender, USDFLOAT_amount);
         Dai.transfer(msg.sender, usd_amount_hedger);
@@ -185,14 +202,14 @@ abstract contract SwapRedeemer is SwapMinter {
         view
         returns (uint256)
     {       
-        console.log("calculate_USDFLOAT_payout()");
+        //console.log("calculate_USDFLOAT_payout()");
         uint256 payout_fac_constrained;
         uint256 max_payout_factor = 2 * chainlink_decimals; // 2  
         if (_exchange_rt > exchange_rate_start) {
             /* payout for 1: 
                             min(1 +  (e1 - e0)/e0 * leverage, 2) 
             */
-            console.log("euro lost value");
+            //console.log("euro lost value");
             uint exchange_rate_delta = _exchange_rt.sub(exchange_rate_start).mul(chainlink_decimals).div(exchange_rate_start); // (e1 - e0)/e0 
             uint exchange_rate_delta_leverage = exchange_rate_delta.mul(leverage); // (e1 - e0)/e0 * leverage
             uint payout_fac = chainlink_decimals.add(exchange_rate_delta_leverage); // 1 + (e1 - e0)/e0 * leverage 
@@ -205,14 +222,14 @@ abstract contract SwapRedeemer is SwapMinter {
                     <=>     max(1 -  (e0 - e1)/e0 * leverage, 0)
                     <=> 1 - min(     (e0 - e1)/e0 * leverage, 1)
             */
-            console.log("euro gained value");
+            //console.log("euro gained value");
             uint exchange_rate_delta_inv = exchange_rate_start.sub(_exchange_rt).mul(chainlink_decimals).div(exchange_rate_start);  // (e0 - e1)/e0
             uint exchange_rate_delta_inv_leverage = exchange_rate_delta_inv.mul(leverage); // (e0 - e1)/e0 * leverage
             uint exchange_rate_delta_inv_leverage_constrained = exchange_rate_delta_inv_leverage.min(chainlink_decimals); // min((e0 - e1)/e0 * leverage,1)
             payout_fac_constrained = chainlink_decimals.sub(exchange_rate_delta_inv_leverage_constrained);
         }
         else {
-            console.log("exchange rate constant");
+            //console.log("exchange rate constant");
             payout_fac_constrained = chainlink_decimals; // fac = 1
         }
   
@@ -226,9 +243,18 @@ abstract contract SwapRedeemer is SwapMinter {
         returns (uint256)
     {
         uint256 normalizer = 2 * chainlink_decimals;
-        console.log("Normalizer is: ", normalizer);
+        //console.log("Normalizer is: ", normalizer);
         uint payour_rt_constrained = normalizer.sub(calculate_EURFIX_payout(_exchange_rt));
         return 
             payour_rt_constrained;
+    }
+
+    
+    function set_final_exchange_rate(uint256 _exchange_rt) onlyOwner
+        public 
+        returns (uint256)
+    {
+        uint256 exchange_rate_end = _exchange_rt;
+        return exchange_rate_end;
     }
 }

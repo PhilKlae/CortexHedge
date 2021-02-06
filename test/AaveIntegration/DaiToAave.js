@@ -12,6 +12,8 @@ describe("DaiToAave functions", function () {
     let DaiToAveFactory;
     let daiToAave;
     let AaveExample;
+
+    
     const whale = '0x04ad0703b9c14a85a02920964f389973e094e153';
 
 
@@ -116,7 +118,7 @@ describe("DaiToAave functions", function () {
         console.log("giving allowance to test contract for dai spending");
         await dai.connect(owner).approve(AaveExample.address, ethers.utils.parseEther(""+lendAmount));
         allowance = await dai.allowance(owner.address,pool);
-        console.log("allowance for aaveexample to spend owner DAI is: " + allowance);      
+        console.log("allowance for aaveexample to spend owner DAI is: " + ethers.utils.formatEther(allowance));      
                         
         const s0 = await adai.totalSupply();
 
@@ -125,24 +127,41 @@ describe("DaiToAave functions", function () {
         let b1 = await dai.balanceOf(AaveExample.address);
         let b2 = await dai.balanceOf(owner.address);
 
-        console.log("dai Aaveexample balance before", b1.toString());
-        console.log("dai owner balance before", b2.toString());
+        console.log("dai Aaveexample balance before", ethers.utils.formatEther(b1).toString());
+        console.log("dai owner balance before", ethers.utils.formatEther(b2).toString());
 
+        //deposit       
+         console.log("DEPOSIT");
         await AaveExample.connect(owner).contractDepositDai( ethers.utils.parseEther(""+lendAmount));
         
         b1 = await dai.balanceOf(AaveExample.address);
         b2 = await dai.balanceOf(owner.address);
         
-        console.log("dai Aaveexample balance after", b1.toString());
-        console.log("dai owner balance after ", b2.toString());
+        console.log("dai Aaveexample balance after", ethers.utils.formatEther(b1).toString());
+        console.log("dai owner balance after ", ethers.utils.formatEther(b2).toString());
 
         b1 = await adai.balanceOf(AaveExample.address);
         b2 = await adai.balanceOf(owner.address);
 
-        console.log("adai Aaveexample balance after", b1.toString());
-        console.log("adai owner balance after ", b2.toString());
+        console.log("adai Aaveexample balance after", ethers.utils.formatEther(b1).toString());
+        console.log("adai owner balance after ", ethers.utils.formatEther(b2).toString());
+
+        //withdraw
+        console.log("WITHDRAW");
+        await AaveExample.connect(owner).userWithdrawDai(ethers.utils.parseEther(""+lendAmount));
+      
+        b1 = await dai.balanceOf(AaveExample.address);
+        b2 = await dai.balanceOf(owner.address);
         
-      //  await daiToAave.connect(owner).withdraw_new();
+        console.log("dai Aaveexample balance after", ethers.utils.formatEther(b1).toString());
+        console.log("dai owner balance after ", ethers.utils.formatEther(b2).toString());
+
+        b1 = await adai.balanceOf(AaveExample.address);
+        b2 = await adai.balanceOf(owner.address);
+
+        console.log("adai Aaveexample balance after", ethers.utils.formatEther(b1).toString());
+        console.log("adai owner balance after ", ethers.utils.formatEther(b2).toString());
+
         //await ownerAave.deposit (pool, dai.address , ethers.utils.parseEther(""+lendAmount));
         //expect (allowance).to.equal(ethers.utils.parseEther(""+lendAmount));
        
