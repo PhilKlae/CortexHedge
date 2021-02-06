@@ -27,7 +27,7 @@ interface DaiToken {
 }
 */
 
-contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
+abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
     using SafeMath for uint256;
     using Math for uint256;
 
@@ -43,6 +43,10 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
     // balance of the pool
     uint256 public total_pool_prinicipal;
     uint256 public total_pool_balance;
+    
+      address eursAddress;
+    address seurAddress;
+    address MoneyToCurveAddress;
 
     // savings period
     enum InvestmentPhase
@@ -61,8 +65,7 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
         uint256 exchange_rate
     );
 
-    constructor() public PriceConsumerV3DAIEUR() {}
-
+  
     ERC20 public Dai;
 
 
@@ -94,8 +97,24 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
         bool success = Dai.transferFrom(msg.sender, address(this), Dai_amount);
         require(success, "buy failed");
 
-        //invest 100% into aave, for now
-        contractDepositDai(Dai_amount);
+        //invest 50% into aave
+        contractDepositDai(Dai_amount.div(2));
+
+
+        //get the fake coins first, from uniswap
+
+        //approve so the Curve integration can spend the tokens
+        ERC20(seurAddress).approve(MoneyToCurveAddress,Dai_amount.div(2).div(2));
+        ERC20(eursAddress).approve(MoneyToCurveAddress,Dai_amount.div(2).div(2));
+
+        uint[2] memory curveInvestment;//Maybe bug? what does memory do
+        
+        //invest 50% into curve
+        curveInvestment[0] = Dai_amount.div(2).div(2); //half eurs
+        curveInvestment[1] = Dai_amount.div(2).div(2); //half seur
+        
+        IMoneyToCurve(MoneyToCurveAddress).multiStepDeposit(curveInvestment);
+        
 
         _mint_tokens(Dai_amount);
         emit Shares_Minted(msg.sender, Dai_amount, uint256(getEUROPrice()));
@@ -129,4 +148,15 @@ contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
         // conversion is one to one!
         USDFLOAT.mint(msg.sender, Dai_amount);
     }
+
+    
+}
+
+interface IMoneyToCurve {
+    
+    function multiStepDeposit(uint256[2] memory _amounts) external;
+    function multiStepWithdraw(uint256[2] memory _amounts) external; 
+    function getEuroValue() external view returns (uint256);
+ //   function withdraw(address asset, uint256 amount, address to) external;
+
 }

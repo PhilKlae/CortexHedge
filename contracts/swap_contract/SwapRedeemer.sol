@@ -53,8 +53,21 @@ abstract contract SwapRedeemer is SwapMinter {
     );
 
     function start_redeeming() public onlyOwner {
+        
         //get 100% of DAI back from aave, including principal
         userWithdrawDai(uint(-1));//TODO more precise number? maybe balanceof adai?
+        
+        IMoneyToCurve moneyToCurve = IMoneyToCurve(MoneyToCurveAddress);
+
+        uint[2] memory curveInvestment;//Maybe bug? what does memory do        
+        //invest 50% into curve
+        curveInvestment[0] = moneyToCurve.getEuroValue().div(2); //half eurs TODO decimals?
+        curveInvestment[1] = moneyToCurve.getEuroValue().div(2); //half seur TODO decimals?
+
+        moneyToCurve.multiStepWithdraw(curveInvestment); //TODO decimals?
+
+        //transfer back to DAI using uniswap TODO here
+
 
         // allow minting of tokens
         current_phase = InvestmentPhase.Redeeming;
@@ -82,6 +95,8 @@ abstract contract SwapRedeemer is SwapMinter {
         require(current_phase == InvestmentPhase.Redeeming, "No savings phase currently");
         _;
     }
+
+  
 
     function redeem(uint256 EURFIX_amount, uint256 USDFLOAT_amount) public {
         require(

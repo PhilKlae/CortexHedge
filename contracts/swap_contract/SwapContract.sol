@@ -10,13 +10,23 @@ import "./SwapRedeemer.sol";
 
 contract SwapContract is SwapRedeemer {
     using SafeMath for uint256;
-    using Math for uint256;
-
-    constructor() public {}
+    using Math for uint256;  
 
     address public EURFIX_address;
     address public USDFLOAT_address;
     address public Dai_address;
+
+
+
+    constructor(address p_MoneyToCurveAddress, address p_eursAddress, address p_seurAddress) public PriceConsumerV3DAIEUR() {
+       
+        MoneyToCurveAddress = p_MoneyToCurveAddress;
+        
+        eursAddress = p_eursAddress;
+        seurAddress = p_seurAddress;
+
+    }
+
 
     // set new address (used for testing)
     function set_EURFIX_address(address new_token_address) public onlyOwner {
