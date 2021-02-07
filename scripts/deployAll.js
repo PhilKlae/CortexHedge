@@ -181,13 +181,7 @@ async function DeploySwapper(addresses, owner, launcher2, launcher3) {
   console.log("Account balance:", (await owner.getBalance()).toString());
 
   // main swap contract
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
-
   const SwapContract = await ethers.getContractFactory("SwapContract");
-
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
 
   const hardhatSwapContract = await SwapContract.connect(owner).deploy(
     addresses["moneyToCurve"],
@@ -198,57 +192,30 @@ async function DeploySwapper(addresses, owner, launcher2, launcher3) {
     addresses["aDAI"],
     addresses["AaveLendingPoolProvider"]);
 
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
-
   await hardhatSwapContract.deployed();
-
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
 
   addresses["Main"] = hardhatSwapContract.address;
 
   // launch auxillary tokens and connect to main contract
   const EURFIX = await ethers.getContractFactory("EURFIX");
 
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
-
   const hardhatEURFIX = await EURFIX.connect(launcher2).deploy(hardhatSwapContract.address);
   await hardhatEURFIX.deployed();
-
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
 
   addresses["EURFIX"] = hardhatEURFIX.address;
 
   const USDFLOAT = await ethers.getContractFactory("USDFLOAT");
 
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
-
   const hardhatUSDFLOAT = await USDFLOAT.connect(launcher3).deploy(hardhatSwapContract.address);
 
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
-
   await hardhatUSDFLOAT.deployed();
-
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
 
   addresses["USDFLOAT"] = hardhatUSDFLOAT.address;
 
   // give derivative contract address to main address
   await hardhatSwapContract.set_EURFIX_address(hardhatEURFIX.address);
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
   await hardhatSwapContract.set_USDFLOAT_address(hardhatUSDFLOAT.address);
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
   await hardhatSwapContract.set_Dai_address(addresses["DAI"]);
-  console.log("checkpoint " + checkpoint);
-  checkpoint++;
 }
 
 async function DeployUniswap(addresses, owner) {
@@ -317,7 +284,7 @@ async function DeployUniswap(addresses, owner) {
 */
 
 
-  const deadline = Math.floor(Date.now() / 1000) + 120;
+  const deadline = Math.floor(Date.now() / 1000) + 2000;
 
   /*  console.log("checkpoint " + checkpoint);
     checkpoint ++;
@@ -327,7 +294,7 @@ async function DeployUniswap(addresses, owner) {
 
   console.log(addresses);
 
-  console.log("checkpoint " + checkpoint);
+  console.log("checkpoint alex" + checkpoint);
   checkpoint++;
 
   await hardhatDAI.connect(owner).approve(addresses["UniRouter"], amountA);
@@ -345,7 +312,7 @@ async function DeployUniswap(addresses, owner) {
     deadline
   );
 
-  console.log("checkpoint " + checkpoint);
+  console.log("checkpoint nope" + checkpoint);
   checkpoint++;
 
   await hardhatDAI.connect(owner).approve(addresses["UniRouter"], amountA);
