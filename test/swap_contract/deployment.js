@@ -2,68 +2,52 @@ const { expect } = require("chai");
 const { waffle } = require("hardhat");
 
 describe("Swap Contract deployment", function () {
-  let SwapContract;
-  let hardhatSwapContract;
+  let swapcontract;
 
-  let EURFIX;
-  let hardhatEURFIX;
-  let USDFLOAT;
-  let hardhatUSDFLOAT;
-  let DAI;
-  let hardhatDAI;
+  let eurfix;
+  let usdfloat;
+  let dai;
 
   let owner;
   let minter;
   let redeemer;
   let addrs;
 
+
   // test data. Use BigNumber to avoid overflow
   const totalDAISupply = ethers.BigNumber.from("1000000000000000000000"); // 1000
-  const initialContractBalance = ethers.BigNumber.from("100000000000000000000"); // 100
-  const ownerDAISupply = totalDAISupply.sub(initialContractBalance);
-  const approvedAmount = ethers.BigNumber.from("100000000000000000000"); // 100
 
-  // parameterization
-  const leverage = 10;
-  
   beforeEach(async () => {
 
     // get addresses to interact
     [owner, minter, redeemer, ...addrs] = await ethers.getSigners();
 
     // main swap contract
-    SwapContract = await ethers.getContractFactory("SwapContract");
-    hardhatSwapContract = await SwapContract.connect(owner).deploy();
-    await hardhatSwapContract.deployed();
+    const SwapContract = await ethers.getContractFactory("SwapContract");
+    swapcontract = await SwapContract.connect(owner).deploy();
+    await swapcontract.deployed();
   
     // launch auxillary tokens and connect to main contract
-    EURFIX = await ethers.getContractFactory("EURFIX");
-    hardhatEURFIX = await EURFIX.connect(owner).deploy(hardhatSwapContract.address);
-    await hardhatEURFIX.deployed();
+    const EURFIX = await ethers.getContractFactory("EURFIX");
+    eurfix = await EURFIX.connect(owner).deploy(swapcontract.address);
+    await eurfix.deployed();
 
-    USDFLOAT = await ethers.getContractFactory("USDFLOAT");
-    hardhatUSDFLOAT = await USDFLOAT.connect(minter).deploy(hardhatSwapContract.address);
-    await hardhatUSDFLOAT.deployed();
+    const USDFLOAT = await ethers.getContractFactory("USDFLOAT");
+    usdfloat = await USDFLOAT.connect(minter).deploy(swapcontract.address);
+    await usdfloat.deployed();
 
-    DAI = await ethers.getContractFactory("DAI");
-    hardhatDAI = await DAI.connect(minter).deploy(totalDAISupply);
-    await hardhatDAI.deployed();
+    const DAI = await ethers.getContractFactory("DAI");
+    dai = await DAI.connect(minter).deploy(totalDAISupply);
+    await dai.deployed();
 
     // give derivative contract address to main address
-    await hardhatSwapContract.connect(owner).set_EURFIX_address(hardhatEURFIX.address);
-    await hardhatSwapContract.connect(owner).set_USDFLOAT_address(hardhatUSDFLOAT.address);
-    await hardhatSwapContract.connect(owner).set_Dai_address(hardhatDAI.address);
+    await swapcontract.connect(owner).set_EURFIX_address(eurfix.address);
+    await swapcontract.connect(owner).set_USDFLOAT_address(usdfloat.address);
+    await swapcontract.connect(owner).set_Dai_address(dai.address);
   });
-  /*
-  describe("Inheritance", function () {
-    it("Can access the price oracles from Price Consumer Contract", async function () {
-      expect(await hardhatSwapContract.getDAIPrice()).not.be.null;
-    });
-  });
-  */
   describe("Check state variables", function () {
     it("Should print the inverse leverage factor", async function () {
-      const inverse_leverage = await hardhatSwapContract.leverage_inverse();
+      const inverse_leverage = await swapcontract.leverage_inverse();
       console.log("Inverse leverage is: " , inverse_leverage.toString());
     });
   });
@@ -71,23 +55,21 @@ describe("Swap Contract deployment", function () {
   describe("Deployment", function () {
     it("Should give Swap Contract the MINTER_ROLE", async function() {
       // Deployer address should receive the MINTER_ROLE
-      const minter_role = await hardhatEURFIX.MINTER_ROLE();
-      expect(await hardhatEURFIX.hasRole(minter_role, hardhatSwapContract.address)).to.be.true;
+      const minter_role = await eurfix.MINTER_ROLE();
+      expect(await eurfix.hasRole(minter_role, swapcontract.address)).to.be.true;
     });
     it("Should set the correct (EURFIX) address in SwapContract ", async function () {
       // token address should be saved correctly
-      expect(await hardhatSwapContract.EURFIX_address()).to.equal(hardhatEURFIX.address);
+      expect(await swapcontract.EURFIX_address()).to.equal(eurfix.address);
     });
     it("Should set the correct (USDFLOAT) address in SwapContract ", async function () {
       // token address should be saved correctly
-      expect(await hardhatSwapContract.USDFLOAT_address()).to.equal(hardhatUSDFLOAT.address);
+      expect(await swapcontract.USDFLOAT_address()).to.equal(usdfloat.address);
     });
     it("Should set the correct (DAI) address in SwapContract ", async function () {
       // token address should be saved correctly
-      expect(await hardhatSwapContract.Dai_address()).to.equal(hardhatDAI.address);
+      expect(await swapcontract.Dai_address()).to.equal(dai.address);
     });
   });
-
-
 });
 
