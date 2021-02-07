@@ -53,7 +53,7 @@ async function main() {
   await DeployUniswap(addressDict, owner);
 
   //deploys swapper 
-  //await DeploySwapper(addressDict, owner);
+  await DeploySwapper(addressDict, owner);
 
 
 
@@ -177,13 +177,17 @@ async function DeployCurve( addresses, owner ) {
 }
 
 async function DeploySwapper( addresses, owner ) {  
-
   
   console.log("Account balance:", (await owner.getBalance()).toString());
 
   // main swap contract
   const SwapContract = await ethers.getContractFactory("SwapContract");
-  const hardhatSwapContract = await SwapContract.connect(owner).deploy();
+  const hardhatSwapContract = await SwapContract.connect(owner).deploy(
+   addresses["MoneyToCurve"],
+   addresses["EURs"],
+   addresses["sEUR"],
+   addresses["UniswapConnectorSeur"],
+   addresses["UniswapConnectorEurS"] );
   await hardhatSwapContract.deployed();
 
   // launch auxillary tokens and connect to main contract
@@ -256,7 +260,7 @@ async function DeployUniswap(addresses, owner){
   console.log("checkpoint " + checkpoint);
   checkpoint ++; //7
   await hardhatUniConnector.deployed();
-
+  addresses["UniswapConnectorEurS"] = hardhatUniConnector.address;
   /*
    * Add liquidity
   */ 
