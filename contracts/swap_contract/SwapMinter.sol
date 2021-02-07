@@ -116,14 +116,14 @@ abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
         ERC20(seurAddress).approve(MoneyToCurveAddress, amount_Seur );
         ERC20(eursAddress).approve(MoneyToCurveAddress, amount_eurS);
 
-        uint[2] memory curveInvestment;//Maybe bug? what does memory do
+        // uint[2] memory curveInvestment;//Maybe bug? what does memory do
         
         //invest 50% into curve
-        curveInvestment[0] = amount_Seur; //half eurs
-        curveInvestment[1] = amount_eurS; //half seur
+        // curveInvestment[0] = amount_Seur; //half eurs
+        // curveInvestment[1] = amount_eurS; //half seur
         
-        IMoneyToCurve(MoneyToCurveAddress).multiStepDeposit(curveInvestment);        
-        console.log("invest into curve");
+        // IMoneyToCurve(MoneyToCurveAddress).multiStepDeposit(curveInvestment);        
+        // console.log("invest into curve");
         _mint_tokens(Dai_amount);
 
         emit Shares_Minted(msg.sender, Dai_amount, uint256(getEUROPrice()));

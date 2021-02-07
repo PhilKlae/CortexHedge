@@ -175,7 +175,7 @@ async function DeployCurve(addresses, owner) {
 
 async function DeploySwapper(addresses, owner, launcher2, launcher3) {
 
-  console.log(addresses);
+  // console.log(addresses);
   let checkpoint = 1;
 
   console.log("Account balance:", (await owner.getBalance()).toString());
@@ -293,7 +293,7 @@ async function DeployUniswap(addresses, owner) {
     console.log( await hardhatRouter.factory());
   */
 
-  console.log(addresses);
+  // console.log(addresses);
 
   console.log("checkpoint alex" + checkpoint);
   checkpoint++;
