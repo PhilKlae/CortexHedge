@@ -17,7 +17,7 @@ contract SwapContract is SwapRedeemer {
     address public Dai_address;  
 
 
-    constructor(address p_MoneyToCurveAddress, address p_eursAddress, address p_seurAddress, address p_UniswapConnectorSEur , address p_UniswapConnectorEurS) public PriceConsumerV3DAIEUR() {
+    constructor(address p_MoneyToCurveAddress, address p_eursAddress, address p_seurAddress, address p_UniswapConnectorSEur , address p_UniswapConnectorEurS, address p_adai , address p_AaveLendingPoolProvider ) public PriceConsumerV3DAIEUR() {
        
         MoneyToCurveAddress = p_MoneyToCurveAddress;
         
@@ -26,6 +26,9 @@ contract SwapContract is SwapRedeemer {
 
         UniswapConnectorSEur = p_UniswapConnectorSEur;
         UniswapConnectorEurS = p_UniswapConnectorEurS;
+
+        adai = ERC20(p_adai);
+        aaveProvider = ILendingPoolAdressProvider(p_AaveLendingPoolProvider);
     }
 
 
@@ -85,5 +88,6 @@ contract SwapContract is SwapRedeemer {
     function _Dai_to_USD(uint256 _amount) internal view returns (uint256) {
         return _amount.mul(uint256(getDAIPrice())).div(10**8);
     }
+    
 
 }

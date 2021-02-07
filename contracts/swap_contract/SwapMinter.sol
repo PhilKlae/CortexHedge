@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/Math.sol";
 import "./PriceConsumerV3DAIEUR.sol";
 import "hardhat/console.sol";
-import "../Aavestuff/AaveImplementation.sol";
+
 
 /* Use  mock Dai token for testing purposes
 interface DaiToken {
@@ -27,7 +27,7 @@ interface DaiToken {
 }
 */
 
-abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementation {
+abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable {
     using SafeMath for uint256;
     using Math for uint256;
 
@@ -48,7 +48,10 @@ abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementati
     address seurAddress;
     address MoneyToCurveAddress;
     address public UniswapConnectorSEur;
-     address public UniswapConnectorEurS;
+    address public UniswapConnectorEurS;
+
+    IERC20 public adai; //mainnet atm       
+    ILendingPoolAdressProvider aaveProvider;
 
     // savings period
     enum InvestmentPhase
@@ -155,8 +158,44 @@ abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementati
         USDFLOAT.mint(msg.sender, Dai_amount);
     }
 
+
+    //im sorry for this
+
+  
+
+    function contractDepositDai(uint256 _amountInDai)public {   
+
+        IAaveLendingPool aaveLendingPool = IAaveLendingPool(aaveProvider.getLendingPool());
+        Dai.approve(address(aaveLendingPool), type(uint256).max);
+        adai.approve(address(aaveLendingPool), type(uint256).max);    
+        //dai.transferFrom(msg.sender, address(this), _amountInDai);
+        aaveLendingPool.deposit(address(Dai), _amountInDai, address(this), 0);
+    }
+
+    function userWithdrawDai(uint256 _amountInDai)public {
+        IAaveLendingPool aaveLendingPool = IAaveLendingPool(aaveProvider.getLendingPool());
+        aaveLendingPool.withdraw(address(Dai), _amountInDai, address(this));//use adai as asset address?
+        // dai.transferFrom(address(this), msg.sender , _amountInDai);
+    }
+
+    function GetAdaiAmount ()        
+    public view returns(uint256)
+    {        
+        return adai.balanceOf(msg.sender);
+    }
     
 }
+
+interface ILendingPoolAdressProvider{
+    function getLendingPool() external view returns (address);
+}
+
+interface IAaveLendingPool {
+    function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
+    function withdraw(address asset, uint256 amount, address to) external;
+}
+
+
 
 interface IMoneyToCurve {
     
