@@ -4,19 +4,7 @@ const { utils } = require("ethers");
 const deploy = require("../../scripts/deployAll.js"); 
 
 describe("Swap Contract", function () {
-  let swapcontract;
 
-  let eurfix;
-  let usdfloat;
-  let dai;
-
-  let owner;
-  let saver;
-  let debtor;
-  let addrs;
-
-  let eurfix_amount;
-  let usdfloat_amount;
 
   // test data. Use BigNumber to avoid overflow
   const fullAmount = utils.parseEther("1000"); // 1000
@@ -24,56 +12,53 @@ describe("Swap Contract", function () {
   // => 100 EURFIX & 100 USDFLOAT are minted
   const initialContractBalance = utils.parseEther("50"); // 100
 
+  let dai;
+  let swapcontract;
+  let usdfloat;
+  let eurfix;
+
   beforeEach('Set up accounts', async () => {
 
-    await deploy.main();
+    const addressDict = await deploy.main();  
+    console.log(addressDict);
 
-    // get addresses to interact
     [owner, saver, debtor, ...addrs] = await ethers.getSigners();
+
+    dai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addressDict['DAI']);
+    swapcontract = await ethers.getContractAt('SwapContract', addressDict['Main']);
+    usdfloat = await ethers.getContractAt('EURFIX', addressDict['USDFLOAT']);
+    eurfix = await ethers.getContractAt('USDFLOAT', addressDict['EURFIX']);
+
+
 
     await OccupyDAI(owner, fullAmount);
 
-    await main();
   });
-
-  beforeEach('Deploy Contracts', async () => {
-    // main swap contract
-    const Swapcontract = await ethers.getContractFactory("SwapContract");
-    swapcontract = await Swapcontract.connect(owner).deploy();
-    await swapcontract.deployed();
-    // launch auxillary tokens and connect to main contract
-    const EURFIX = await ethers.getContractFactory("EURFIX");
-    eurfix = await EURFIX.connect(saver).deploy(swapcontract.address);
-    await eurfix.deployed();
-
-    const Usdfloat = await ethers.getContractFactory("USDFLOAT");
-    usdfloat = await Usdfloat.connect(debtor).deploy(swapcontract.address);
-    await usdfloat.deployed();
-
-    dai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', '0x6b175474e89094c44da98b954eedeac495271d0f');
-
-    // give derivative contract address to main address
-    await swapcontract.set_EURFIX_address(eurfix.address);
-    await swapcontract.set_USDFLOAT_address(usdfloat.address);
-    await swapcontract.set_Dai_address(dai.address);
-
-  });
-
 
   beforeEach('Send initial Dai balance', async () => {
     // send initial supply of Dai to the pool
     await dai.transfer(swapcontract.address, initialContractBalance);
 
   });
+
   beforeEach('Initial transactions', async () => {
     // send some initial Dai to the contract
     await swapcontract.start_saving();
     // start minting coins 
     await dai.connect(owner).approve(swapcontract.address, approvedAmount);
     const dai_allowance = await dai.allowance(owner.address, swapcontract.address);
+
+    console.log("dai allowance", dai_allowance.toString());
+    console.log("dai approved amount", approvedAmount.toString());
+    console.log("Before we invest");
+
     await swapcontract.connect(owner).invest(approvedAmount);
+    console.log("we have invested");
+
     eurfix_amount = await eurfix.balanceOf(owner.address);
+
     usdfloat_amount = await usdfloat.balanceOf(owner.address);
+
     //await dai.transfer(swapcontract.address, 5000000); // simulate some interest earned
   });
   beforeEach('Give allowance to burn EURFIX/usdfloat', async () => {
@@ -338,6 +323,40 @@ describe("Swap Contract", function () {
     return balance;
 
 
+  }
+  async function logAllbalances() {
+    [owner, saver, debtor, ...addrs] = await ethers.getSigners();
+
+    swapcontract = await ethers.getContractAt('SwapContract', addressDict['Main']);
+    moneyToCurve = await ethers.getContractAt('SwapContract', addressDict['moneyToCurve']);
+    
+    dai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addressDict['DAI']);
+    usdfloat = await ethers.getContractAt('EURFIX', addressDict['USDFLOAT']);
+    eurfix = await ethers.getContractAt('USDFLOAT', addressDict['EURFIX']);
+    CurveLPToken = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addressDict['CurveLPToken']);
+    adai = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addressDict['aDAI']);
+
+    // swap contract
+    console.log("swapcontract owns", utils.formatEther((await dai.balanceOf(swapcontract.address).toString())));
+    console.log("swapcontract owns", utils.formatEther((await usdfloat.balanceOf(swapcontract.address).toString())));
+    console.log("swapcontract owns", utils.formatEther((await eurfix.balanceOf(swapcontract.address).toString())));
+    console.log("swapcontract owns", utils.formatEther((await CurveLPToken.balanceOf(swapcontract.address).toString())));
+    console.log("swapcontract owns", utils.formatEther((await adai.balanceOf(swapcontract.address).toString())));
+
+    // moneyToCurve
+    console.log("moneyToCurve owns", utils.formatEther((await dai.balanceOf(moneyToCurve.address).toString())));
+    console.log("moneyToCurve owns", utils.formatEther((await usdfloat.balanceOf(moneyToCurve.address).toString())));
+    console.log("moneyToCurve owns", utils.formatEther((await eurfix.balanceOf(moneyToCurve.address).toString())));
+    console.log("moneyToCurve owns", utils.formatEther((await CurveLPToken.balanceOf(moneyToCurve.address).toString())));
+    console.log("moneyToCurve owns", utils.formatEther((await adai.balanceOf(moneyToCurve.address).toString())));
+    
+    // owner
+    console.log("owner owns", utils.formatEther((await dai.balanceOf(owner.address).toString())));
+    console.log("owner owns", utils.formatEther((await usdfloat.balanceOf(owner.address).toString())));
+    console.log("owner owns", utils.formatEther((await eurfix.balanceOf(owner.address).toString())));
+    console.log("owner owns", utils.formatEther((await CurveLPToken.balanceOf(owner.address).toString())));
+    console.log("owner owns", utils.formatEther((await adai.balanceOf(owner.address).toString())));
+  
   }
 
 });        

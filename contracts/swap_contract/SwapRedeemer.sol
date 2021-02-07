@@ -53,28 +53,31 @@ abstract contract SwapRedeemer is SwapMinter {
     );
 
     function start_redeeming() public onlyOwner {
-        
+        exchange_rate_end = uint256(getEUROPrice());
+
         //get 100% of DAI back from aave, including principal
         userWithdrawDai(uint(-1));//TODO more precise number? maybe balanceof adai?
-        
+        console.log("withdraw dai");
         IMoneyToCurve moneyToCurve = IMoneyToCurve(MoneyToCurveAddress);
 
         uint[2] memory curveInvestment;//Maybe bug? what does memory do        
         //invest 50% into curve
+        console.log("money to curve calc");
         curveInvestment[0] = moneyToCurve.getEuroValue().div(2); //half eurs TODO decimals?
         curveInvestment[1] = moneyToCurve.getEuroValue().div(2); //half seur TODO decimals?
-
+        console.log("Euro value is",
+                    moneyToCurve.getEuroValue());          
+        console.log("money to curve withdraw");
         moneyToCurve.multiStepWithdraw(curveInvestment); //TODO decimals?
-        
+        console.log("take money out of curve");  
         //transfer back to DAI using uniswap TODO here
         uint256 amountDai_SEur =  IUniSwapConnector(UniswapConnectorSEur).swapBForA(ERC20(seurAddress).balanceOf(address(this)) , 0);//(Dai_amount.div(4), 0); //Dai_amount.div(4).mul(exchange_rate_start)
         uint256 amountDai_EurS =  IUniSwapConnector(UniswapConnectorEurS).swapBForA(ERC20(eursAddress).balanceOf(address(this)), 0); //Dai_amount.div(4).mul(exchange_rate_start)
-
+        console.log("swap euro for dai");  
     
         // allow minting of tokens
         current_phase = InvestmentPhase.Redeeming;
 
-        exchange_rate_end = uint256(getEUROPrice());
 
         // calculate global numbers once to save gas
         final_total_pool_balance = Dai.balanceOf(address(this));

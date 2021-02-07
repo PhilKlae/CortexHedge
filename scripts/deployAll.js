@@ -120,7 +120,7 @@ async function DeployCurve(addresses, owner) {
   const curveLPToken = await CurveLPToken.new({ from: owner.address });
   await curveLPToken.methods['initialize()']({ from: owner.address });
 
-  //addresses["CurveLPToken"] = curveLPToken.address;
+  addresses["CurveLPToken"] = curveLPToken.address;
 
   const curveSwap = await CurveSwap.new({ from: owner.address });
   await curveSwap.initialize(
@@ -420,12 +420,12 @@ async function OccupyDAI(new_owner, transferAmount) {
 
 
 }
-
+/*
 main()
   .then(() => process.exit(0))
   .catch(error => {
     console.error(error);
     process.exit(1);
   });
-
-  module.exports = { main }
+*/
+module.exports = { main }
