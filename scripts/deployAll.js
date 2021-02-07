@@ -220,8 +220,8 @@ async function DeployUniswap(addresses, owner){
   
   uniConnector = await ethers.getContractFactory("UniswapConnector");
   hardhatUniConnector = await uniConnector.deploy(
-    addressDict["UniFactory"],
-    addressDict["UniRouter"],
+    addresses["UniFactory"],
+    addresses["UniRouter"],
     hardhatDAI.address,
     hardhatEURs.address
   );
