@@ -20,6 +20,7 @@ describe("Swap Contract", function () {
   // test data. Use BigNumber to avoid overflow
   const fullAmount = utils.parseEther("1000"); // 1000
   const approvedAmount = utils.parseEther("200"); // 100
+  // => 100 EURFIX & 100 USDFLOAT are minted
   const initialContractBalance = utils.parseEther("50"); // 100
 
   beforeEach('Set up accounts', async () => {
@@ -252,7 +253,40 @@ describe("Swap Contract", function () {
       expect(USDFLOAT_payout_factor).to.be.equal(utils.parseUnits("5", unit=7));
     });
   });
+  describe("Should redeem the correct amount of tokens", function () {
+    it("Should redeem the correct amount of EUFIX given a change of exchange rate", async function () {
 
+      // change exchange rate
+      const exchange_rate = await swapcontract.getEUROPrice();
+      const new_exchange_rate = exchange_rate.mul("101").div("100"); // EURUSD increases by 1%
+      
+      // calculate payout factor for new exchange rate
+      const EURFIX_payout_factor = await swapcontract.calculate_EURFIX_payout(new_exchange_rate);
+      
+      // calculate current value of certificates given payout factor
+      const payout = await swapcontract.EURFIX_to_Dai(eurfix_amount, EURFIX_payout_factor);
+
+      // 100 * (1 + 1% * leverage), where leverage = 10 
+      expect(payout).to.be.equal(utils.parseEther("110.0", unit=8));
+
+    });
+    it("Should redeem the correct amount of USDFLOAT given a change of exchange rate", async function () {
+
+      // change exchange rate
+      const exchange_rate = await swapcontract.getEUROPrice();
+      const new_exchange_rate = exchange_rate.mul("101").div("100"); // EURUSD increases by 1%
+      
+      // calculate payout factor for new exchange rate
+      const USDFLOAT_payout_factor = await swapcontract.calculate_USDFLOAT_payout(new_exchange_rate);
+      
+      // calculate current value of certificates given payout factor
+      const payout = await swapcontract.USDFLOAT_to_Dai(usdfloat_amount, USDFLOAT_payout_factor);
+
+      // 100 * (1 + 1% * leverage), where leverage = 10 
+      expect(payout).to.be.equal(utils.parseEther("90.0", unit=8));
+
+    });
+  });
   const impersonateAddress = async (address) => {
     await hre.network.provider.request({
       method: "hardhat_impersonateAccount",

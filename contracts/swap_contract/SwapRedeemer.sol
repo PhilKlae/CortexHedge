@@ -196,7 +196,7 @@ abstract contract SwapRedeemer is SwapMinter {
         return _amount.mul(_USDFLOATpayoutRate).div(chainlink_decimals);
     }
 
-    // limit exchange rate movements hedged by the contract to 50% up/down
+    // payout is always between [0,2]
     function calculate_EURFIX_payout(uint256 _exchange_rt)
         public
         view
@@ -236,7 +236,7 @@ abstract contract SwapRedeemer is SwapMinter {
         return payout_fac_constrained; // min(max(e, min_value), max_value)*leverage
     }
 
-    // payout is always [0,2]
+    // payout is always between [0,2]
     function calculate_USDFLOAT_payout(uint256 _exchange_rt)
         public
         view
@@ -247,14 +247,5 @@ abstract contract SwapRedeemer is SwapMinter {
         uint payour_rt_constrained = normalizer.sub(calculate_EURFIX_payout(_exchange_rt));
         return 
             payour_rt_constrained;
-    }
-
-    
-    function set_final_exchange_rate(uint256 _exchange_rt) onlyOwner
-        public 
-        returns (uint256)
-    {
-        uint256 exchange_rate_end = _exchange_rt;
-        return exchange_rate_end;
     }
 }
