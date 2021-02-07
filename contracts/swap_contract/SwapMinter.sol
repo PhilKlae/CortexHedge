@@ -101,11 +101,14 @@ abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementati
 
         //invest 50% into aave
         contractDepositDai(Dai_amount.div(2));
-        
+        console.log("send adai");
         //get the fake coins first, from uniswap
+        Dai.approve(UniswapConnectorSEur, Dai_amount.div(4));
+        Dai.approve(UniswapConnectorEurS, Dai_amount.div(4));
+
         uint256 amount_Seur =  IUniSwapConnector(UniswapConnectorSEur).swapAForB(Dai_amount.div(4), 0); //Dai_amount.div(4).mul(exchange_rate_start)
         uint256 amount_eurS =  IUniSwapConnector(UniswapConnectorEurS).swapAForB(Dai_amount.div(4), 0); //Dai_amount.div(4).mul(exchange_rate_start)
-
+        console.log("swap tokens");
         //approve so the Curve integration can spend the tokens
         ERC20(seurAddress).approve(MoneyToCurveAddress, amount_Seur );
         ERC20(eursAddress).approve(MoneyToCurveAddress, amount_eurS);
@@ -117,7 +120,7 @@ abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementati
         curveInvestment[1] = amount_eurS; //half seur
         
         IMoneyToCurve(MoneyToCurveAddress).multiStepDeposit(curveInvestment);        
-
+        console.log("invest into curve");
         _mint_tokens(Dai_amount);
 
         emit Shares_Minted(msg.sender, Dai_amount, uint256(getEUROPrice()));
