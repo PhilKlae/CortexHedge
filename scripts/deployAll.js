@@ -1,10 +1,10 @@
 
 
-const { expect } = require("ethers");
-//const { hexStripZeros } = require("ethers/lib/utils");
+/*const { expect } = require("ethers");
+//const { hexStripZeros } = require("ethers/lib/utils");*/
 const hre = require("hardhat");
 const routerJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json');
-const ether = require("@openzeppelin/test-helpers/src/ether");
+//const ether = require("@openzeppelin/test-helpers/src/ether");
 
 
    async function main() {
@@ -194,7 +194,9 @@ async function DeploySwapper(addresses, owner, launcher2, launcher3) {
     addresses["EURs"],
     addresses["sEUR"],
     addresses["UniswapConnectorSeur"],
-    addresses["UniswapConnectorEurS"]);
+    addresses["UniswapConnectorEurS"],
+    addresses["aDAI"],
+    addresses["AaveLendingPoolProvider"]);
 
   console.log("checkpoint " + checkpoint);
   checkpoint++;
@@ -424,6 +426,5 @@ main()
     console.error(error);
     process.exit(1);
   });
-
 
   module.exports = { main }

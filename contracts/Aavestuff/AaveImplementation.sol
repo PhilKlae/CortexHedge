@@ -22,6 +22,7 @@ import "@aave/protocol-v2/contracts/interfaces/IAToken.sol";
 
 
 abstract contract AaveImplementation {
+    
     IERC20 public dai = IERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);//mainnet atm
     IERC20 public adai = IERC20(0xfC1E690f61EFd961294b3e1Ce3313fBD8aa4f85d);//mainnet atm
     IAaveLendingPool public aaveLendingPool = IAaveLendingPool(0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9);//mainnet atm
@@ -39,24 +40,11 @@ abstract contract AaveImplementation {
         // dai.transferFrom(address(this), msg.sender , _amountInDai);
     }
 
-  /*  function GetPrincipalAmount ()        
-    external view returns(uint256)
-    {        
-        return adai.scaledBalanceOf(msg.sender);
-    }*/
-
     function GetAdaiAmount ()        
     public view returns(uint256)
     {        
         return adai.balanceOf(msg.sender);
     }
-
-/*interface IAToken {
-    function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external;
-    function withdraw(address asset, uint256 amount, address to) external;
-}*/
-
-
 
 }
 
