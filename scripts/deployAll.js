@@ -190,7 +190,8 @@ async function DeploySwapper(addresses, owner, launcher2, launcher3) {
     addresses["UniswapConnectorSeur"],
     addresses["UniswapConnectorEurS"],
     addresses["aDAI"],
-    addresses["AaveLendingPoolProvider"]);
+    addresses["AaveLendingPoolProvider"],
+    addresses["Chainlink"]);
 
   await hardhatSwapContract.deployed();
 
