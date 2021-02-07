@@ -1,9 +1,10 @@
 const { expect } = require("ethers");
-const { hexStripZeros } = require("ethers/lib/utils");
+//const { hexStripZeros } = require("ethers/lib/utils");
 const hre = require("hardhat");
+const routerJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
 
-import { DeployCurve } from './1_deploy_curve_module';
-import { DeploySwapper } from './2_deploy_swap_module';
+
+
 
 async function main() {
   accounts = await ethers.getSigners()
@@ -39,24 +40,21 @@ async function main() {
 
   }
 
-  await DeployCurve(addressDict);
+  //deploys EURs, sEUR, MoneyToCurve
+  await DeployCurve(addressDict, owner);
 
-  await DeploySwapper(addressDict);
-  
-
-  
-  //deploy eurs
-  //deploy seur
-
-  //deploy curvefake
-
-  //deploy curve helper
+  //deploy uniswap shizzle
 
   //deploy uniswap pool seur DAI/
 
   //deploy uniswap pool eurs DAI/
 
   //deploy uniswap helper
+
+  //deploys swapper 
+  await DeploySwapper(addressDict, owner);
+
+
 
   //deploy swap contract
 
@@ -65,6 +63,171 @@ async function main() {
   //deploy usd float
 
   return addressDict;
+}
+
+async function DeployCurve( addresses, owner ) {
+  
+  console.log(
+    "Deploying contracts with the account:",
+    owner.address
+  );
+  
+  console.log("Account balance:", (await owner.getBalance()).toString());
+
+  const { BN } = require('@openzeppelin/test-helpers');
+  
+  const ERC20 = artifacts.require('Stub_ERC20');
+  const YERC20 = artifacts.require('Stub_YERC20');
+  
+  const CurveDeposit = artifacts.require('Stub_CurveFi_DepositY');
+  const CurveSwap = artifacts.require('Stub_CurveFi_SwapY');
+  const CurveLPToken = artifacts.require('Stub_CurveFi_LPTokenY');
+  const CurveCRVMinter = artifacts.require('Stub_CurveFi_Minter');
+  const CurveGauge = artifacts.require('Stub_CurveFi_Gauge');
+  
+  const supplies = {
+    sEUR: ether.utils.parseUnits("1000000", unit = 2),
+    EURS: ether.utils.parseUnits("1000000", unit = 18)
+  };
+
+  // Prepare stablecoins stubs
+  const sEUR = await ERC20.new({ from: owner });
+  await sEUR.methods['initialize(string,string,uint8,uint256)']('sEUR', 'sEUR', 18, supplies.sEUR, { from: owner });
+  console.log(
+    "sEUR address", 
+    sEUR.address, 
+    "@dev: use in UNISWAP pools \n"
+  )
+  
+  addresses["sEUR"] = sEUR.address;
+
+  const EURS = await ERC20.new({ from: owner });
+  await EURS.methods['initialize(string,string,uint8,uint256)']('EURS', 'EURS', 2, supplies.EURS, { from: owner });
+  console.log(
+    "EURS address", 
+    EURS.address, 
+    "@dev: use in UNISWAP pools \n"
+  )    
+
+  addresses["EURs"] = EURS.address;
+
+  //Prepare Y-token wrappers
+  const ysEUR = await YERC20.new({ from: owner });
+  await ysEUR.initialize(sEUR.address, 'ysEUR', 18, { from: owner });
+  const yEURS = await YERC20.new({ from: owner });
+  await yEURS.initialize(EURS.address, 'yEURS', 2,{ from: owner });
+
+  //Prepare stubs of Curve.Fi
+  const curveLPToken = await CurveLPToken.new({from:owner});
+  await curveLPToken.methods['initialize()']({from:owner});
+
+  //addresses["CurveLPToken"] = curveLPToken.address;
+
+  const curveSwap = await CurveSwap.new({ from: owner });
+  await curveSwap.initialize(
+      [ysEUR.address, yEURS.address],
+      [sEUR.address, EURS.address],
+      curveLPToken.address, 10, { from: owner });
+  await curveLPToken.addMinter(curveSwap.address, {from:owner});
+
+  //addresses["CurveSwapPool"] = curveSwap.address;
+
+  const curveDeposit = await CurveDeposit.new({ from: owner });
+  await curveDeposit.initialize(
+      [ysEUR.address, yEURS.address],
+      [sEUR.address, EURS.address],
+      curveSwap.address, curveLPToken.address, { from: owner });
+  await curveLPToken.addMinter(curveDeposit.address, {from:owner});
+  console.log(
+    "curveDeposit address", 
+    curveDeposit.address, 
+    "@dev: use in investment module \n"
+  )    
+  
+  const crvToken = await ERC20.new({ from: owner });
+  await crvToken.methods['initialize(string,string,uint8,uint256)']('CRV', 'CRV', 18, 0, { from: owner });
+
+  const curveMinter = await CurveCRVMinter.new({ from: owner });
+  await curveMinter.initialize(crvToken.address, { from: owner });
+  await crvToken.addMinter(curveMinter.address, { from: owner });
+  console.log(
+    "curveMinter address", 
+    curveMinter.address, 
+    "@dev: use in investment module \n"
+  )    
+
+  const curveGauge = await CurveGauge.new({ from: owner });
+  await curveGauge.initialize(curveLPToken.address, curveMinter.address, {from:owner});
+  await crvToken.addMinter(curveGauge.address, { from: owner });
+  console.log(
+    "curveGauge address", 
+    curveGauge.address, 
+    "@dev: use in investment module \n"
+  )    
+
+
+  moneyToCurve = await MoneyToCurve.new({from:owner});
+  await moneyToCurve.initialize({from:owner});
+  await moneyToCurve.setup(curveDeposit.address, curveGauge.address, curveMinter.address, {from:owner});
+
+  addresses["moneyToCurve"] = moneyToCurve.address;
+
+}
+
+async function DeploySwapper( addresses, owner ) {  
+
+  
+  console.log("Account balance:", (await owner.getBalance()).toString());
+
+  // main swap contract
+  const SwapContract = await ethers.getContractFactory("SwapContract");
+  const hardhatSwapContract = await SwapContract.connect(owner).deploy();
+  await hardhatSwapContract.deployed();
+
+  // launch auxillary tokens and connect to main contract
+  const EURFIX = await ethers.getContractFactory("EURFIX");
+  const hardhatEURFIX = await EURFIX.connect(minter).deploy(hardhatSwapContract.address);
+  await hardhatEURFIX.deployed();
+
+  const USDFLOAT = await ethers.getContractFactory("USDFLOAT");
+  const hardhatUSDFLOAT = await USDFLOAT.connect(redeemer).deploy(hardhatSwapContract.address);
+  await hardhatUSDFLOAT.deployed();
+
+  const DAI = await ethers.getContractFactory("DAI");
+  const hardhatDAI = await DAI.connect(owner).deploy(totalDAISupply);
+  await hardhatDAI.deployed();
+
+  // give derivative contract address to main address
+  await hardhatSwapContract.set_EURFIX_address(hardhatEURFIX.address);
+  await hardhatSwapContract.set_USDFLOAT_address(hardhatUSDFLOAT.address);
+  await hardhatSwapContract.set_Dai_address(hardhatDAI.address);
+}
+
+async function DeployUniswap(addresses, owner){
+  
+  let hardhatDAI = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addresses["DAI"]);                
+      
+  
+  let EUR;
+  let hardhatEUR;
+
+  let uniConnector;
+  let hardhatUniConnector;
+
+  router = new ethers.ContractFactory(routerJson.abi, routerJson.bytecode, owner);
+  hardhatRouter = await router.attach(addresses["UniRouter"]);
+  
+
+  EUR = await ethers.getContractFactory("EUR");
+  hardhatEUR = await EUR.deploy(100000000000);
+
+  uniConnector = await ethers.getContractFactory("UniswapConnector");
+  hardhatUniConnector = await uniConnector.deploy(uniFactoryKovan, uniRouterKovan);
+
+  // await hardhatFactory.deployed();
+  await hardhatDAI.deployed();
+  await hardhatEUR.deployed();
+  await hardhatUniConnector.deployed();
 }
 
 main()
