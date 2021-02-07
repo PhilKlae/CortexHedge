@@ -12,14 +12,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract UniswapConnector {
     address public immutable factoryAddress;
     address public immutable routerAddress;
-    IERC20 public DAI;
-    IERC20 public EUR;
+    IERC20 public TokenA;
+    IERC20 public TokenB;
 
-    constructor(address _factory, address _router, address _DAI, address _EUR) public {
+    constructor(address _factory, address _router, address _TokenA, address _TokenB) public {
         factoryAddress = _factory;
         routerAddress = _router;
-        DAI = IERC20(_DAI);
-        EUR = IERC20(_EUR);
+        TokenA = IERC20(_TokenA);
+        TokenB = IERC20(_TokenB);
     }
 
     function createPool(address tokenA, address tokenB) external {
@@ -57,23 +57,51 @@ contract UniswapConnector {
     }
 
     // amountOutMin shoulb be retrieved from an oracle in order to prevent front-running
-    function swapDaiForEur (uint _amount, uint amountOutMin) public {
+    function swapAForB (uint _amountIn, uint amountOutMin)
+        public
+        returns (uint amountOut)
+    {
 
-        require(DAI.transferFrom(msg.sender, address(this), _amount), 'transferFrom failed.');
-        require(DAI.approve(routerAddress, _amount), 'approve failed.');
+        require(TokenA.transferFrom(msg.sender, address(this), _amountIn), 'transferFrom failed.');
+        require(TokenA.approve(routerAddress, _amountIn), 'approve failed.');
 
         uint[] memory amounts;
         address[] memory path = new address[](2);
-        path[0] = address(DAI);
-        path[1] = address(EUR);
+        path[0] = address(TokenA);
+        path[1] = address(TokenB);
         amounts = IUniswapV2Router02(routerAddress).swapExactTokensForTokens(
-            _amount,
+            _amountIn,
             amountOutMin,
             path,
             msg.sender,
             block.timestamp
         );
 
-        console.log('amount of EUR received: ', amounts[1]);
+        amountOut = amounts[1];
+        console.log('amount of TokenB received: ', amountOut);
+    }
+
+    function swapBForA (uint _amountIn, uint amountOutMin)
+        public
+        returns (uint amountOut)
+    {
+
+        require(TokenB.transferFrom(msg.sender, address(this), _amountIn), 'transferFrom failed.');
+        require(TokenB.approve(routerAddress, _amountIn), 'approve failed.');
+
+        uint[] memory amounts;
+        address[] memory path = new address[](2);
+        path[0] = address(TokenB);
+        path[1] = address(TokenA);
+        amounts = IUniswapV2Router02(routerAddress).swapExactTokensForTokens(
+            _amountIn,
+            amountOutMin,
+            path,
+            msg.sender,
+            block.timestamp
+        );
+
+        amountOut = amounts[1];
+        console.log('amount of TokenA received: ', amountOut);
     }
 }
