@@ -84,6 +84,7 @@ async function DeployCurve( addresses, owner ) {
   const CurveLPToken = artifacts.require('Stub_CurveFi_LPTokenY');
   const CurveCRVMinter = artifacts.require('Stub_CurveFi_Minter');
   const CurveGauge = artifacts.require('Stub_CurveFi_Gauge');
+  const MoneyToCurve = artifacts.require('MoneyToCurve');
   
   const supplies = {
     sEUR: ethers.utils.parseUnits("1000000", unit = 2),
@@ -91,8 +92,8 @@ async function DeployCurve( addresses, owner ) {
   };
 
   // Prepare stablecoins stubs
-  const sEUR = await ERC20.new({ from: owner });
-  await sEUR.methods['initialize(string,string,uint8,uint256)']('sEUR', 'sEUR', 18, supplies.sEUR, { from: owner });
+  const sEUR = await ERC20.new({ from: owner.address });
+  await sEUR.methods['initialize(string,string,uint8,uint256)']('sEUR', 'sEUR', 18, supplies.sEUR, { from: owner.address });
   console.log(
     "sEUR address", 
     sEUR.address, 
@@ -101,8 +102,8 @@ async function DeployCurve( addresses, owner ) {
   
   addresses["sEUR"] = sEUR.address;
 
-  const EURS = await ERC20.new({ from: owner });
-  await EURS.methods['initialize(string,string,uint8,uint256)']('EURS', 'EURS', 2, supplies.EURS, { from: owner });
+  const EURS = await ERC20.new({ from: owner.address });
+  await EURS.methods['initialize(string,string,uint8,uint256)']('EURS', 'EURS', 2, supplies.EURS, { from: owner.address });
   console.log(
     "EURS address", 
     EURS.address, 
@@ -112,53 +113,53 @@ async function DeployCurve( addresses, owner ) {
   addresses["EURs"] = EURS.address;
 
   //Prepare Y-token wrappers
-  const ysEUR = await YERC20.new({ from: owner });
-  await ysEUR.initialize(sEUR.address, 'ysEUR', 18, { from: owner });
-  const yEURS = await YERC20.new({ from: owner });
-  await yEURS.initialize(EURS.address, 'yEURS', 2,{ from: owner });
+  const ysEUR = await YERC20.new({ from: owner.address });
+  await ysEUR.initialize(sEUR.address, 'ysEUR', 18, { from: owner.address });
+  const yEURS = await YERC20.new({ from: owner.address });
+  await yEURS.initialize(EURS.address, 'yEURS', 2,{ from: owner.address });
 
   //Prepare stubs of Curve.Fi
-  const curveLPToken = await CurveLPToken.new({from:owner});
-  await curveLPToken.methods['initialize()']({from:owner});
+  const curveLPToken = await CurveLPToken.new({from: owner.address});
+  await curveLPToken.methods['initialize()']({from: owner.address});
 
   //addresses["CurveLPToken"] = curveLPToken.address;
 
-  const curveSwap = await CurveSwap.new({ from: owner });
+  const curveSwap = await CurveSwap.new({ from: owner.address });
   await curveSwap.initialize(
       [ysEUR.address, yEURS.address],
       [sEUR.address, EURS.address],
-      curveLPToken.address, 10, { from: owner });
-  await curveLPToken.addMinter(curveSwap.address, {from:owner});
+      curveLPToken.address, 10, { from: owner.address });
+  await curveLPToken.addMinter(curveSwap.address, {from: owner.address});
 
   //addresses["CurveSwapPool"] = curveSwap.address;
 
-  const curveDeposit = await CurveDeposit.new({ from: owner });
+  const curveDeposit = await CurveDeposit.new({ from: owner.address });
   await curveDeposit.initialize(
       [ysEUR.address, yEURS.address],
       [sEUR.address, EURS.address],
-      curveSwap.address, curveLPToken.address, { from: owner });
-  await curveLPToken.addMinter(curveDeposit.address, {from:owner});
+      curveSwap.address, curveLPToken.address, { from: owner.address });
+  await curveLPToken.addMinter(curveDeposit.address, {from: owner.address});
   console.log(
     "curveDeposit address", 
     curveDeposit.address, 
     "@dev: use in investment module \n"
   )    
   
-  const crvToken = await ERC20.new({ from: owner });
-  await crvToken.methods['initialize(string,string,uint8,uint256)']('CRV', 'CRV', 18, 0, { from: owner });
+  const crvToken = await ERC20.new({ from: owner.address });
+  await crvToken.methods['initialize(string,string,uint8,uint256)']('CRV', 'CRV', 18, 0, { from: owner.address });
 
-  const curveMinter = await CurveCRVMinter.new({ from: owner });
-  await curveMinter.initialize(crvToken.address, { from: owner });
-  await crvToken.addMinter(curveMinter.address, { from: owner });
+  const curveMinter = await CurveCRVMinter.new({ from: owner.address });
+  await curveMinter.initialize(crvToken.address, { from: owner.address });
+  await crvToken.addMinter(curveMinter.address, { from: owner.address });
   console.log(
     "curveMinter address", 
     curveMinter.address, 
     "@dev: use in investment module \n"
   )    
 
-  const curveGauge = await CurveGauge.new({ from: owner });
-  await curveGauge.initialize(curveLPToken.address, curveMinter.address, {from:owner});
-  await crvToken.addMinter(curveGauge.address, { from: owner });
+  const curveGauge = await CurveGauge.new({ from: owner.address });
+  await curveGauge.initialize(curveLPToken.address, curveMinter.address, {from: owner.address});
+  await crvToken.addMinter(curveGauge.address, { from: owner.address });
   console.log(
     "curveGauge address", 
     curveGauge.address, 
@@ -166,9 +167,9 @@ async function DeployCurve( addresses, owner ) {
   )    
 
 
-  moneyToCurve = await MoneyToCurve.new({from:owner});
-  await moneyToCurve.initialize({from:owner});
-  await moneyToCurve.setup(curveDeposit.address, curveGauge.address, curveMinter.address, {from:owner});
+  moneyToCurve = await MoneyToCurve.new({from: owner.address});
+  await moneyToCurve.initialize({from: owner.address});
+  await moneyToCurve.setup(curveDeposit.address, curveGauge.address, curveMinter.address, {from: owner.address});
 
   addresses["moneyToCurve"] = moneyToCurve.address;
 
