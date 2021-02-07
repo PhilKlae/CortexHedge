@@ -45,7 +45,7 @@ abstract contract AaveImplementation {
         return adai.scaledBalanceOf(msg.sender);
     }*/
 
-     function GetAdaiAmount ()        
+    function GetAdaiAmount ()        
     public view returns(uint256)
     {        
         return adai.balanceOf(msg.sender);
