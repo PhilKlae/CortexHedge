@@ -65,10 +65,12 @@ abstract contract SwapRedeemer is SwapMinter {
         curveInvestment[1] = moneyToCurve.getEuroValue().div(2); //half seur TODO decimals?
 
         moneyToCurve.multiStepWithdraw(curveInvestment); //TODO decimals?
-
+        
         //transfer back to DAI using uniswap TODO here
+        uint256 amountDai_SEur =  IUniSwapConnector(UniswapConnectorSEur).swapBForA(ERC20(seurAddress).balanceOf(address(this)) , 0);//(Dai_amount.div(4), 0); //Dai_amount.div(4).mul(exchange_rate_start)
+        uint256 amountDai_EurS =  IUniSwapConnector(UniswapConnectorEurS).swapBForA(ERC20(eursAddress).balanceOf(address(this)), 0); //Dai_amount.div(4).mul(exchange_rate_start)
 
-
+    
         // allow minting of tokens
         current_phase = InvestmentPhase.Redeeming;
 
@@ -123,12 +125,37 @@ abstract contract SwapRedeemer is SwapMinter {
             Dai_returned
         );*/
         emit Shares_Redeemed(msg.sender, Dai_returned, uint256(getEUROPrice()));
-        
-        userWithdrawDai(Dai_returned);//TODO Check if this is correct number, Replace with a function that also withdraws from curve
-        
+         
+        uint256 realReturn = WithdrawImmediate(Dai_returned);
+         
         total_pool_prinicipal -= (EURFIX_amount.add(USDFLOAT_amount));
         
-        Dai.transfer(msg.sender, Dai_returned);
+        Dai.transfer(msg.sender, realReturn);
+    }
+
+    function WithdrawImmediate(uint256 Dai_returned) internal returns (uint256){
+         
+        //get 50% of DAI back from aave, including yield
+        userWithdrawDai(Dai_returned.div(2));
+        
+        uint256 curve_redeeming_seur = Dai_returned.mul(uint256(getEUROPrice())).div(4);//use uniswap price?
+        uint256 curve_redeeming_eurs = Dai_returned.mul(uint256(getEUROPrice())).div(4);//use uniswap price?
+
+        IMoneyToCurve moneyToCurve = IMoneyToCurve(MoneyToCurveAddress);
+
+        uint[2] memory curveInvestment;//Maybe bug? what does memory do        
+        //invest 50% into curve
+        curveInvestment[0] = curve_redeeming_seur; //half eurs TODO decimals?
+        curveInvestment[1] = curve_redeeming_seur; //half seur TODO decimals?
+
+        moneyToCurve.multiStepWithdraw(curveInvestment); //TODO decimals?
+        
+        //uniswap trade with a quarter of dai amount, check decimals!      
+        uint256 amountDai_SEur =  IUniSwapConnector(UniswapConnectorSEur).swapBForA(ERC20(seurAddress).balanceOf(address(this)) , 0);//(Dai_amount.div(4), 0); //Dai_amount.div(4).mul(exchange_rate_start)
+        uint256 amountDai_EurS =  IUniSwapConnector(UniswapConnectorEurS).swapBForA(ERC20(eursAddress).balanceOf(address(this)), 0); //Dai_amount.div(4).mul(exchange_rate_start)
+
+        return Dai_returned.div(2).add(amountDai_EurS).add(amountDai_SEur);
+        //we have dai now!
     }
 
     function currentPoolBalance() internal returns(uint256){

@@ -14,17 +14,18 @@ contract SwapContract is SwapRedeemer {
 
     address public EURFIX_address;
     address public USDFLOAT_address;
-    address public Dai_address;
+    address public Dai_address;  
 
 
-
-    constructor(address p_MoneyToCurveAddress, address p_eursAddress, address p_seurAddress) public PriceConsumerV3DAIEUR() {
+    constructor(address p_MoneyToCurveAddress, address p_eursAddress, address p_seurAddress, address p_UniswapConnectorSEur , address p_UniswapConnectorEurS) public PriceConsumerV3DAIEUR() {
        
         MoneyToCurveAddress = p_MoneyToCurveAddress;
         
         eursAddress = p_eursAddress;
         seurAddress = p_seurAddress;
 
+        UniswapConnectorSEur = p_UniswapConnectorSEur;
+        UniswapConnectorEurS = p_UniswapConnectorEurS;
     }
 
 

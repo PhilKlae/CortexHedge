@@ -44,9 +44,11 @@ abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementati
     uint256 public total_pool_prinicipal;
     uint256 public total_pool_balance;
     
-      address eursAddress;
+    address eursAddress;
     address seurAddress;
     address MoneyToCurveAddress;
+    address public UniswapConnectorSEur;
+     address public UniswapConnectorEurS;
 
     // savings period
     enum InvestmentPhase
@@ -99,24 +101,25 @@ abstract contract SwapMinter is PriceConsumerV3DAIEUR, Ownable, AaveImplementati
 
         //invest 50% into aave
         contractDepositDai(Dai_amount.div(2));
-
-
+        
         //get the fake coins first, from uniswap
+        uint256 amount_Seur =  IUniSwapConnector(UniswapConnectorSEur).swapAForB(Dai_amount.div(4), 0); //Dai_amount.div(4).mul(exchange_rate_start)
+        uint256 amount_eurS =  IUniSwapConnector(UniswapConnectorEurS).swapAForB(Dai_amount.div(4), 0); //Dai_amount.div(4).mul(exchange_rate_start)
 
         //approve so the Curve integration can spend the tokens
-        ERC20(seurAddress).approve(MoneyToCurveAddress,Dai_amount.div(2).div(2));
-        ERC20(eursAddress).approve(MoneyToCurveAddress,Dai_amount.div(2).div(2));
+        ERC20(seurAddress).approve(MoneyToCurveAddress, amount_Seur );
+        ERC20(eursAddress).approve(MoneyToCurveAddress, amount_eurS);
 
         uint[2] memory curveInvestment;//Maybe bug? what does memory do
         
         //invest 50% into curve
-        curveInvestment[0] = Dai_amount.div(2).div(2); //half eurs
-        curveInvestment[1] = Dai_amount.div(2).div(2); //half seur
+        curveInvestment[0] = amount_Seur; //half eurs
+        curveInvestment[1] = amount_eurS; //half seur
         
-        IMoneyToCurve(MoneyToCurveAddress).multiStepDeposit(curveInvestment);
-        
+        IMoneyToCurve(MoneyToCurveAddress).multiStepDeposit(curveInvestment);        
 
         _mint_tokens(Dai_amount);
+
         emit Shares_Minted(msg.sender, Dai_amount, uint256(getEUROPrice()));
     }
 
@@ -160,3 +163,11 @@ interface IMoneyToCurve {
  //   function withdraw(address asset, uint256 amount, address to) external;
 
 }
+
+interface IUniSwapConnector {
+    
+  function swapAForB (uint _amountIn, uint amountOutMin) external returns (uint amountOut);
+  function swapBForA (uint _amountIn, uint amountOutMin) external returns (uint amountOut);
+  
+}
+
