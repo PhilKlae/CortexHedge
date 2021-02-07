@@ -210,43 +210,38 @@ async function DeploySwapper( addresses, owner ) {
 }
 
 async function DeployUniswap(addresses, owner){
-  const amountA = 12000000000;
-  const amountB = 10000000000;
+  const amountA = 1200000;
+  const amountB = 1000000;
   
-  await OccupyDAI(owner,amountA);
+  await OccupyDAI(owner,amountA * 2);
 
   let checkpoint = 1
   
-  console.log("checkpoint " + checkpoint);
-  checkpoint ++;
   
   let hardhatDAI = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addresses["DAI"]);                
   
-  console.log("checkpoint " + checkpoint);
-  checkpoint ++;
+
   
   let hardhatEURs = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addresses["EURs"]);                
+  let hardhatsEUR = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addresses["sEUR"]);                
+
 
   let uniConnector;
   let hardhatUniConnector;
   
-  console.log("checkpoint " + checkpoint);
-  checkpoint ++;
+  
 
   router = new ethers.ContractFactory(routerJson.abi, routerJson.bytecode, owner);
   hardhatRouter = await router.attach(addresses["UniRouter"]);
   
-  console.log("checkpoint " + checkpoint);
-  checkpoint ++;
-
+ 
   uniConnector = await ethers.getContractFactory("UniswapConnector");
 
-  console.log("checkpoint " + checkpoint);
-  checkpoint ++;
+
 
   //console.log( hardhatEURs.address  );
   
-  
+  //EURs pool
   hardhatUniConnector = await uniConnector.deploy(
     addresses["UniFactory"],
     addresses["UniRouter"],
@@ -254,19 +249,26 @@ async function DeployUniswap(addresses, owner){
     hardhatEURs.address
   );
 
-  console.log("checkpoint " + checkpoint);
-  checkpoint ++;
 
-  console.log("checkpoint " + checkpoint);
-  checkpoint ++; //7
   await hardhatUniConnector.deployed();
   addresses["UniswapConnectorEurS"] = hardhatUniConnector.address;
+
+//sEUR pool
+  hardhatUniConnectorSeur = await uniConnector.deploy(
+    addresses["UniFactory"],
+    addresses["UniRouter"],
+    hardhatDAI.address,
+    hardhatsEUR.address
+  );
+
+
+  await hardhatUniConnectorSeur.deployed();
+  addresses["UniswapConnectorSeur"] = hardhatUniConnectorSeur.address;
+
   /*
    * Add liquidity
   */ 
-  await hardhatDAI.connect(owner).approve(addresses["UniRouter"], amountA);
 
-  await hardhatEURs.connect(owner).approve(addresses["UniRouter"], amountB);
   
   /*console.log((await hardhatDAI.balanceOf(owner.address)).toNumber() );
   console.log((await hardhatEURs.balanceOf(owner.address)).toNumber() );
@@ -275,10 +277,20 @@ async function DeployUniswap(addresses, owner){
 
   const deadline = Math.floor(Date.now() / 1000) + 120;
 
-  console.log("checkpoint " + checkpoint);
+/*  console.log("checkpoint " + checkpoint);
   checkpoint ++;
 
   console.log( await hardhatRouter.factory());
+*/
+
+    console.log(addresses);
+
+    console.log("checkpoint " + checkpoint);
+    checkpoint ++;
+
+  await hardhatDAI.connect(owner).approve(addresses["UniRouter"], amountA);
+
+  await hardhatEURs.connect(owner).approve(addresses["UniRouter"], amountB);
 
   await hardhatRouter.addLiquidity(
     hardhatDAI.address,
@@ -290,11 +302,29 @@ async function DeployUniswap(addresses, owner){
     owner.address,
     deadline
   );
+
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
   
+  await hardhatDAI.connect(owner).approve(addresses["UniRouter"], amountA);
+
+  await hardhatsEUR.connect(owner).approve(addresses["UniRouter"], amountB);
+
+  await hardhatRouter.addLiquidity(
+    hardhatDAI.address,
+    hardhatsEUR.address,
+    amountA,
+    amountB,
+    0,
+    0,
+    owner.address,
+    deadline
+  );
+
   console.log("checkpoint " + checkpoint);
   checkpoint ++;
 
-  const info = await hardhatUniConnector.pairInfo(hardhatDAI.address, hardhatEURs.address);
+ const info = await hardhatUniConnector.pairInfo(hardhatDAI.address, hardhatEURs.address);
 
   console.log(info[0].toNumber())
 }
