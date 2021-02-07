@@ -9,6 +9,8 @@ const ether = require("@openzeppelin/test-helpers/src/ether");
 async function main() {
   accounts = await ethers.getSigners()
   let owner = accounts[0];
+  let launcher2 = accounts[1];
+  let launcher3 = accounts[2];
 
   console.log("owner: " + owner.address);
   console.log("selected net: " + hre.network.name);
@@ -53,15 +55,7 @@ async function main() {
   await DeployUniswap(addressDict, owner);
 
   //deploys swapper 
-  await DeploySwapper(addressDict, owner);
-
-
-
-  //deploy swap contract
-
-  //deploy euro fixed
-
-  //deploy usd float
+  await DeploySwapper(addressDict, owner,launcher2, launcher3);
 
   return addressDict;
 }
@@ -176,37 +170,80 @@ async function DeployCurve( addresses, owner ) {
 
 }
 
-async function DeploySwapper( addresses, owner ) {  
+async function DeploySwapper( addresses, owner , launcher2, launcher3) {  
   
+  console.log(addresses);
+  let checkpoint = 1;
+
   console.log("Account balance:", (await owner.getBalance()).toString());
 
   // main swap contract
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+
   const SwapContract = await ethers.getContractFactory("SwapContract");
+
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+
   const hardhatSwapContract = await SwapContract.connect(owner).deploy(
-   addresses["MoneyToCurve"],
+   addresses["moneyToCurve"],
    addresses["EURs"],
    addresses["sEUR"],
    addresses["UniswapConnectorSeur"],
    addresses["UniswapConnectorEurS"] );
+
+   console.log("checkpoint " + checkpoint);
+   checkpoint ++;
+
   await hardhatSwapContract.deployed();
+
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+  
+  addresses["Main"] = hardhatSwapContract.address;
 
   // launch auxillary tokens and connect to main contract
   const EURFIX = await ethers.getContractFactory("EURFIX");
-  const hardhatEURFIX = await EURFIX.connect(minter).deploy(hardhatSwapContract.address);
+
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+
+  const hardhatEURFIX = await EURFIX.connect(launcher2).deploy(hardhatSwapContract.address);
   await hardhatEURFIX.deployed();
 
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+  
+  addresses["EURFIX"] = hardhatEURFIX.address;
+
   const USDFLOAT = await ethers.getContractFactory("USDFLOAT");
-  const hardhatUSDFLOAT = await USDFLOAT.connect(redeemer).deploy(hardhatSwapContract.address);
+
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+
+  const hardhatUSDFLOAT = await USDFLOAT.connect(launcher3).deploy(hardhatSwapContract.address);
+
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+
   await hardhatUSDFLOAT.deployed();
 
-  const DAI = await ethers.getContractFactory("DAI");
-  const hardhatDAI = await DAI.connect(owner).deploy(totalDAISupply);
-  await hardhatDAI.deployed();
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+
+  addresses["USDFLOAT"] = hardhatUSDFLOAT.address;
 
   // give derivative contract address to main address
   await hardhatSwapContract.set_EURFIX_address(hardhatEURFIX.address);
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
   await hardhatSwapContract.set_USDFLOAT_address(hardhatUSDFLOAT.address);
-  await hardhatSwapContract.set_Dai_address(hardhatDAI.address);
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
+  await hardhatSwapContract.set_Dai_address(addresses["DAI"]);
+  console.log("checkpoint " + checkpoint);
+  checkpoint ++;
 }
 
 async function DeployUniswap(addresses, owner){
