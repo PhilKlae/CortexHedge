@@ -29,14 +29,12 @@ contract PriceConsumerV3DAIEUR {
      * Aggregator: DAI/USD
      * Address: 0x777A68032a88E5A84678A77Af2CD65A7b3c0775a
      */
-
+    
     constructor() public {
         priceFeed_dai_usd = AggregatorV3Interface(
             0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9
         );
-        priceFeed_eur_usd = AggregatorV3Interface(
-            0xb49f677943BC038e9857d61E7d053CaA2C1734C1
-        );
+     
     }
 
     /**
