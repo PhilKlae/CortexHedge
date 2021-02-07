@@ -426,9 +426,5 @@ main()
     console.error(error);
     process.exit(1);
   });
-<<<<<<< HEAD
-*/
-=======
->>>>>>> 2d977358c5b98b6de32c2f88284d389444c092de
 
   module.exports = { main }
