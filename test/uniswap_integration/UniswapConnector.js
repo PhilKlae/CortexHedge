@@ -1,13 +1,8 @@
 const { ethers } = require("hardhat");
 const { expect } = require("chai");
-// const { abi, bytecode } = require('@uniswap/v2-core/build/UniswapV2Factory.json')
 const routerJson = require('@uniswap/v2-periphery/build/UniswapV2Router02.json')
 
-// const IUniswapV2Router02 = require('@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol')
-
 describe("Uniswap connector contract", function() {
-  // let factory;
-  // let hardhatFactory;
 
   let DAI;
   let hardhatDAI;
@@ -26,9 +21,6 @@ describe("Uniswap connector contract", function() {
   beforeEach(async function () {
     [owner] = await ethers.getSigners();
 
-    // factory = new ethers.ContractFactory(abi, bytecode, owner);
-    // hardhatFactory = await factory.deploy(owner.address);
-
     router = new ethers.ContractFactory(routerJson.abi, routerJson.bytecode, owner);
     hardhatRouter = await router.attach(uniRouterKovan);
 
@@ -46,7 +38,6 @@ describe("Uniswap connector contract", function() {
       hardhatEUR.address
     );
 
-    // await hardhatFactory.deployed();
     await hardhatDAI.deployed();
     await hardhatEUR.deployed();
     await hardhatUniConnector.deployed();
@@ -55,7 +46,6 @@ describe("Uniswap connector contract", function() {
   // test for DAI and EUR deployment are in test/utility/mockToken.js
 
   it("Deployment phase", async function () {
-    // expect(await hardhatFactory.address).not.be.null;
     expect(await hardhatDAI.address).not.be.null;
     expect(await hardhatEUR.address).not.be.null;
     expect(await hardhatUniConnector.address).not.be.null;
@@ -75,9 +65,17 @@ describe("Uniswap connector contract", function() {
   it("Should add liquidity to the Uni pool and swap token", async function() {
     const amountA = 10000000000;
     const amountB = 10000000000;
+    const swapAmount = 1000;
+    const swapAmountMin = swapAmount - 10;
 
+    /*
+     * Create Pool
+    */ 
     await hardhatUniConnector.createPool(hardhatDAI.address, hardhatEUR.address);
     
+    /*
+     * Add liquidity
+    */ 
     await hardhatDAI.approve(uniRouterKovan, amountA);
 
     await hardhatEUR.approve(uniRouterKovan, amountB);
@@ -100,13 +98,25 @@ describe("Uniswap connector contract", function() {
     expect(info[0]).to.be.equal(amountA);
     expect(info[1]).to.be.equal(amountB);
 
-    await hardhatDAI.approve(hardhatUniConnector.address, 1000);
+    /*
+     * Swap some tokens
+    */ 
+    await hardhatDAI.approve(hardhatUniConnector.address, swapAmount);
 
-    const balanceBefore = await hardhatEUR.balanceOf(owner.address);
+    const balanceInital = await hardhatEUR.balanceOf(owner.address);
 
-    await hardhatUniConnector.swapDaiForEur(1000, 990);
+    await hardhatUniConnector.swapAForB(swapAmount, swapAmountMin);
 
-    const balanceAfter = await hardhatEUR.balanceOf(owner.address);
-    // expect(balanceAfter.toNumber()).to.be.
+    const balanceMiddle = await hardhatEUR.balanceOf(owner.address);
+
+    expect(balanceMiddle.toNumber()).to.be.above(balanceInital.toNumber() + swapAmountMin);
+
+    await hardhatEUR.approve(hardhatUniConnector.address, swapAmount);
+
+    await hardhatUniConnector.swapBForA(swapAmount, swapAmountMin);
+
+    const balanceEnd = await hardhatEUR.balanceOf(owner.address);
+
+    expect(balanceEnd.toNumber()).to.be.below(balanceMiddle.toNumber() - swapAmountMin);
   });
 });
