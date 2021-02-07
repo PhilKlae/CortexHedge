@@ -86,8 +86,8 @@ async function DeployCurve( addresses, owner ) {
   const CurveGauge = artifacts.require('Stub_CurveFi_Gauge');
   
   const supplies = {
-    sEUR: ether.utils.parseUnits("1000000", unit = 2),
-    EURS: ether.utils.parseUnits("1000000", unit = 18)
+    sEUR: ethers.utils.parseUnits("1000000", unit = 2),
+    EURS: ethers.utils.parseUnits("1000000", unit = 18)
   };
 
   // Prepare stablecoins stubs
@@ -204,12 +204,11 @@ async function DeploySwapper( addresses, owner ) {
 }
 
 async function DeployUniswap(addresses, owner){
+  const amountDai = 12000000000;
+  const amountEURs = 10000000000;
   
   let hardhatDAI = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addresses["DAI"]);                
-      
-  
-  let EUR;
-  let hardhatEUR;
+  let hardhatEURs = await ethers.getContractAt('@openzeppelin/contracts/token/ERC20/ERC20.sol:ERC20', addresses["EURs"]);                
 
   let uniConnector;
   let hardhatUniConnector;
@@ -217,17 +216,39 @@ async function DeployUniswap(addresses, owner){
   router = new ethers.ContractFactory(routerJson.abi, routerJson.bytecode, owner);
   hardhatRouter = await router.attach(addresses["UniRouter"]);
   
-
-  EUR = await ethers.getContractFactory("EUR");
-  hardhatEUR = await EUR.deploy(100000000000);
-
   uniConnector = await ethers.getContractFactory("UniswapConnector");
-  hardhatUniConnector = await uniConnector.deploy(uniFactoryKovan, uniRouterKovan);
+  hardhatUniConnector = await uniConnector.deploy(
+    addressDict["UniFactory"],
+    addressDict["UniRouter"],
+    hardhatDAI.address,
+    hardhatEURs.address
+  );
 
-  // await hardhatFactory.deployed();
-  await hardhatDAI.deployed();
-  await hardhatEUR.deployed();
   await hardhatUniConnector.deployed();
+
+  /*
+   * Add liquidity
+  */ 
+  await hardhatDAI.approve(addressDict["UniRouter"], amountA);
+
+  await hardhatEURs.approve(addressDict["UniRouter"], amountB);
+  
+  const deadline = Math.floor(Date.now() / 1000) + 120;
+
+  await hardhatRouter.addLiquidity(
+    hardhatDAI.address,
+    hardhatEUR.address,
+    amountDAI,
+    amountEURs,
+    0,
+    0,
+    owner.address,
+    deadline
+  );
+
+  const info = await hardhatUniConnector.pairInfo(hardhatDAI.address, hardhatEUR.address);
+
+  console.log(info[0].toNumber())
 }
 
 main()
