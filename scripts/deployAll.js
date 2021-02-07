@@ -50,9 +50,10 @@ async function main() {
   //deploy uniswap pool eurs DAI/
 
   //deploy uniswap helper
+  await DeployUniswap(addressDict, owner);
 
   //deploys swapper 
-  await DeploySwapper(addressDict, owner);
+  //await DeploySwapper(addressDict, owner);
 
 
 
