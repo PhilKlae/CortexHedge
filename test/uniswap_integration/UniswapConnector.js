@@ -33,13 +33,18 @@ describe("Uniswap connector contract", function() {
     hardhatRouter = await router.attach(uniRouterKovan);
 
     DAI = await ethers.getContractFactory("DAI");
-    hardhatDAI = await DAI.deploy(100000000000);
+    hardhatDAI = await DAI.deploy(1000000000000);
 
     EUR = await ethers.getContractFactory("EUR");
-    hardhatEUR = await EUR.deploy(100000000000);
+    hardhatEUR = await EUR.deploy(1000000000000);
 
     uniConnector = await ethers.getContractFactory("UniswapConnector");
-    hardhatUniConnector = await uniConnector.deploy(uniFactoryKovan, uniRouterKovan);
+    hardhatUniConnector = await uniConnector.deploy(
+      uniFactoryKovan,
+      uniRouterKovan,
+      hardhatDAI.address,
+      hardhatEUR.address
+    );
 
     // await hardhatFactory.deployed();
     await hardhatDAI.deployed();
@@ -67,35 +72,41 @@ describe("Uniswap connector contract", function() {
     expect(address).not.be.null;
   });
 
-  it("Should add liquidity to the Uni pool", async function() {
+  it("Should add liquidity to the Uni pool and swap token", async function() {
+    const amountA = 10000000000;
+    const amountB = 10000000000;
+
     await hardhatUniConnector.createPool(hardhatDAI.address, hardhatEUR.address);
     
-    const address = await hardhatUniConnector.getPairAddress(hardhatDAI.address, hardhatEUR.address);
+    await hardhatDAI.approve(uniRouterKovan, amountA);
 
-    await hardhatDAI.approve(uniRouterKovan, 100000);
-
-    await hardhatEUR.approve(uniRouterKovan, 100000);
-
+    await hardhatEUR.approve(uniRouterKovan, amountB);
+    
     const deadline = Math.floor(Date.now() / 1000) + 120;
 
     await hardhatRouter.addLiquidity(
       hardhatDAI.address,
       hardhatEUR.address,
-      100000,
-      100000,
-      95000,
-      95000,
+      amountA,
+      amountB,
+      amountA - 1000,
+      amountB - 1000,
       owner.address,
       deadline
     );
 
-    const result = await hardhatUniConnector.pairInfo(hardhatDAI.address, hardhatEUR.address);
+    const info = await hardhatUniConnector.pairInfo(hardhatDAI.address, hardhatEUR.address);
 
-    console.log(result[0].toNumber(), result[1].toNumber(), result[2].toNumber())
+    expect(info[0]).to.be.equal(amountA);
+    expect(info[1]).to.be.equal(amountB);
+
+    await hardhatDAI.approve(hardhatUniConnector.address, 1000);
+
+    const balanceBefore = await hardhatEUR.balanceOf(owner.address);
+
+    await hardhatUniConnector.swapDaiForEur(1000, 990);
+
+    const balanceAfter = await hardhatEUR.balanceOf(owner.address);
+    // expect(balanceAfter.toNumber()).to.be.
   });
 });
-    // const result =  await hardhatUniConnector.computeLiquidityShareValue(
-    //   100,
-    //   hardhatDAI.address,
-    //   hardhatEUR.address
-    // );

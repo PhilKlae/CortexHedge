@@ -7,18 +7,26 @@ import '@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol';
 import '@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol';
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract UniswapConnector {
     address public immutable factoryAddress;
     address public immutable routerAddress;
+    IERC20 public DAI;
+    IERC20 public EUR;
 
-    constructor(address _factory, address _router) public {
+    constructor(address _factory, address _router, address _DAI, address _EUR) public {
         factoryAddress = _factory;
         routerAddress = _router;
+        DAI = IERC20(_DAI);
+        EUR = IERC20(_EUR);
     }
 
     function createPool(address tokenA, address tokenB) external {
-        IUniswapV2Factory(factoryAddress).createPair(tokenA, tokenB);
-        address pool = IUniswapV2Factory(factoryAddress).getPair(tokenA, tokenB);
+        IUniswapV2Factory factory = IUniswapV2Factory(factoryAddress);
+
+        factory.createPair(tokenA, tokenB);
+        address pool = factory.getPair(tokenA, tokenB);
 
         require(pool != address(0), "Pool creation failed");
     }
@@ -29,7 +37,7 @@ contract UniswapConnector {
         returns (address pairAddress)
     {
         pairAddress = IUniswapV2Factory(factoryAddress).getPair(tokenA, tokenB);
-        
+
         require(pairAddress != address(0), "Pool does not exist yet, please create it");
     }
 
@@ -48,41 +56,24 @@ contract UniswapConnector {
         (reserveA, reserveB) = tokenA == pair.token0() ? (reserves0, reserves1) : (reserves1, reserves0);
     }
 
-    // I need to retrieve the price of DAI/ETH before making the swap, to preevent front running
-    // function swapToken (uint _amount) {
-    //     uint amountIn = _amount * 10 ** DAI.decimals();
-    //     require(DAI.transferFrom(msg.sender, address(this), amountIn), 'transferFrom failed.');
-    //     require(DAI.approve(address(UniswapV2Router02), amountIn), 'approve failed.');
+    // amountOutMin shoulb be retrieved from an oracle in order to prevent front-running
+    function swapDaiForEur (uint _amount, uint amountOutMin) public {
 
-    //     // amountOutMin must be retrieved from an oracle of some kind
-    //     address[] memory path = new address[](2);
-    //     path[0] = address(DAI);
-    //     path[1] = UniswapV2Router02.WETH();
-    //     UniswapV2Router02.swapExactTokensForETH(amountIn, amountOutMin, path, msg.sender, block.timestamp);
-    // }
+        require(DAI.transferFrom(msg.sender, address(this), _amount), 'transferFrom failed.');
+        require(DAI.approve(routerAddress, _amount), 'approve failed.');
+
+        uint[] memory amounts;
+        address[] memory path = new address[](2);
+        path[0] = address(DAI);
+        path[1] = address(EUR);
+        amounts = IUniswapV2Router02(routerAddress).swapExactTokensForTokens(
+            _amount,
+            amountOutMin,
+            path,
+            msg.sender,
+            block.timestamp
+        );
+
+        console.log('amount of EUR received: ', amounts[1]);
+    }
 }
-
-    // function addLiquidity(
-    //     address tokenA,
-    //     address tokenB,
-    //     uint amountADesired,
-    //     uint amountBDesired,
-    //     uint amountAMin,
-    //     uint amountBMin
-    // )
-    //     external
-    //     returns (uint amountA, uint amountB, uint liquidity)
-    // {
-    //     IUniswapV2Router02 router = IUniswapV2Router02(routerAddress);
-
-    //     (amountA, amountB, liquidity) = router.addLiquidity(
-    //         tokenA,
-    //         tokenB,
-    //         amountADesired,
-    //         amountBDesired,
-    //         amountAMin,
-    //         amountBMin,
-    //         routerAddress,
-    //         now + 15
-    //     );
-    // }
